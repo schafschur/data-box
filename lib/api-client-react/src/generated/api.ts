@@ -35,6 +35,7 @@ import type {
   Photo,
   PhotoInput,
   PhotoUpdate,
+  PhotoUploadBody,
   TodoItem,
   TodoItemInput,
   TodoItemUpdate,
@@ -1963,6 +1964,83 @@ export const useAddPhoto = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAddPhotoMutationOptions(options));
+    }
+
+export const getUploadPhotoUrl = (blockId: number,) => {
+
+
+
+
+  return `/api/blocks/${blockId}/photos/upload`
+}
+
+/**
+ * @summary Upload a photo file (multipart) and create a photo record
+ */
+export const uploadPhoto = async (blockId: number,
+    photoUploadBody: PhotoUploadBody, options?: RequestInit): Promise<Photo> => {
+    const formData = new FormData();
+formData.append(`file`, photoUploadBody.file);
+if(photoUploadBody.caption !== undefined) {
+ formData.append(`caption`, photoUploadBody.caption);
+ }
+
+  return customFetch<Photo>(getUploadPhotoUrl(blockId),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getUploadPhotoMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadPhoto>>, TError,{blockId: number;data: BodyType<PhotoUploadBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadPhoto>>, TError,{blockId: number;data: BodyType<PhotoUploadBody>}, TContext> => {
+
+const mutationKey = ['uploadPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadPhoto>>, {blockId: number;data: BodyType<PhotoUploadBody>}> = (props) => {
+          const {blockId,data} = props ?? {};
+
+          return  uploadPhoto(blockId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof uploadPhoto>>>
+    export type UploadPhotoMutationBody = BodyType<PhotoUploadBody>
+    export type UploadPhotoMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Upload a photo file (multipart) and create a photo record
+ */
+export const useUploadPhoto = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadPhoto>>, TError,{blockId: number;data: BodyType<PhotoUploadBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadPhoto>>,
+        TError,
+        {blockId: number;data: BodyType<PhotoUploadBody>},
+        TContext
+      > => {
+      return useMutation(getUploadPhotoMutationOptions(options));
     }
 
 export const getUpdatePhotoUrl = (id: number,) => {

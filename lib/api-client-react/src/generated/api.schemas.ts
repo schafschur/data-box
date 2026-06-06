@@ -152,6 +152,11 @@ export interface PhotoInput {
   caption?: string | null;
 }
 
+export interface PhotoUploadBody {
+  file: Blob;
+  caption?: string;
+}
+
 export interface PhotoUpdate {
   /** @nullable */
   caption?: string | null;

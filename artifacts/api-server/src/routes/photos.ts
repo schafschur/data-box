@@ -1,5 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { eq, asc } from "drizzle-orm";
+import multer from "multer";
+import { randomUUID } from "crypto";
 import { db } from "@workspace/db";
 import { photosTable } from "@workspace/db";
 import {
@@ -10,8 +12,11 @@ import {
   UpdatePhotoBody,
   DeletePhotoParams,
 } from "@workspace/api-zod";
+import { objectStorageClient, ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 
 const router: IRouter = Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+const objectStorageService = new ObjectStorageService();
 
 router.get("/blocks/:blockId/photos", async (req: Request, res: Response) => {
   const { blockId } = ListPhotosParams.parse(req.params);
@@ -21,6 +26,54 @@ router.get("/blocks/:blockId/photos", async (req: Request, res: Response) => {
     .where(eq(photosTable.blockId, blockId))
     .orderBy(asc(photosTable.createdAt));
   res.json(rows);
+});
+
+router.post("/blocks/:blockId/photos/upload", upload.single("file"), async (req: Request, res: Response) => {
+  const { blockId } = AddPhotoParams.parse(req.params);
+
+  if (!req.file) {
+    res.status(400).json({ error: "No file uploaded" });
+    return;
+  }
+
+  try {
+    const privateObjectDir = objectStorageService.getPrivateObjectDir();
+    const objectId = randomUUID();
+    const ext = (req.file.originalname.split(".").pop() || "jpg").toLowerCase();
+    const fullPath = `${privateObjectDir}/uploads/${objectId}.${ext}`;
+
+    const pathWithSlash = fullPath.startsWith("/") ? fullPath : `/${fullPath}`;
+    const parts = pathWithSlash.split("/");
+    const bucketName = parts[1];
+    const objectName = parts.slice(2).join("/");
+
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+    await file.save(req.file.buffer, {
+      metadata: { contentType: req.file.mimetype },
+    });
+
+    const storageUrl = `https://storage.googleapis.com/${bucketName}/${objectName}`;
+    const objectPath = objectStorageService.normalizeObjectEntityPath(storageUrl);
+
+    const caption = typeof req.body.caption === "string" && req.body.caption.trim()
+      ? req.body.caption.trim()
+      : null;
+
+    const [row] = await db
+      .insert(photosTable)
+      .values({ objectPath, blockId, ...(caption ? { caption } : {}) })
+      .returning();
+
+    res.status(201).json(row);
+  } catch (err) {
+    if (err instanceof ObjectNotFoundError) {
+      res.status(404).json({ error: "Storage not found" });
+    } else {
+      console.error("Photo upload error:", err);
+      res.status(500).json({ error: "Upload failed" });
+    }
+  }
 });
 
 router.post("/blocks/:blockId/photos", async (req: Request, res: Response) => {

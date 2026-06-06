@@ -26,6 +26,7 @@ export * from './photo';
 export * from './photoInput';
 export * from './photoStats';
 export * from './photoUpdate';
+export * from './photoUploadBody';
 export * from './textStats';
 export * from './todoItem';
 export * from './todoItemInput';

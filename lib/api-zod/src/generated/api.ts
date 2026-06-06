@@ -415,6 +415,19 @@ export const AddPhotoBody = zod.object({
 
 
 /**
+ * @summary Upload a photo file (multipart) and create a photo record
+ */
+export const UploadPhotoParams = zod.object({
+  "blockId": zod.coerce.number()
+})
+
+export const UploadPhotoBody = zod.object({
+  "file": zod.instanceof(File),
+  "caption": zod.string().optional()
+})
+
+
+/**
  * @summary Update a photo caption
  */
 export const UpdatePhotoParams = zod.object({
