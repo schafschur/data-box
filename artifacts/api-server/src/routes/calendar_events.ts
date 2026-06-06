@@ -1,0 +1,76 @@
+import { Router, type IRouter, type Request, type Response } from "express";
+import { eq, asc } from "drizzle-orm";
+import { db } from "@workspace/db";
+import { calendarEventsTable } from "@workspace/db";
+import {
+  ListCalendarEventsParams,
+  CreateCalendarEventParams,
+  CreateCalendarEventBody,
+  UpdateCalendarEventParams,
+  UpdateCalendarEventBody,
+  DeleteCalendarEventParams,
+} from "@workspace/api-zod";
+
+const router: IRouter = Router();
+
+router.get("/blocks/:blockId/calendar-events", async (req: Request, res: Response) => {
+  const { blockId } = ListCalendarEventsParams.parse(req.params);
+  const rows = await db
+    .select()
+    .from(calendarEventsTable)
+    .where(eq(calendarEventsTable.blockId, blockId))
+    .orderBy(asc(calendarEventsTable.date));
+  res.json(rows);
+});
+
+router.post("/blocks/:blockId/calendar-events", async (req: Request, res: Response) => {
+  const { blockId } = CreateCalendarEventParams.parse(req.params);
+  const parsed = CreateCalendarEventBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request body" });
+    return;
+  }
+  const dateStr = parsed.data.date instanceof Date
+    ? parsed.data.date.toISOString().split("T")[0]
+    : String(parsed.data.date);
+  const [row] = await db
+    .insert(calendarEventsTable)
+    .values({ ...parsed.data, date: dateStr, blockId })
+    .returning();
+  res.status(201).json(row);
+});
+
+router.put("/calendar-events/:id", async (req: Request, res: Response) => {
+  const { id } = UpdateCalendarEventParams.parse(req.params);
+  const parsed = UpdateCalendarEventBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request body" });
+    return;
+  }
+  const dateStr = parsed.data.date instanceof Date
+    ? parsed.data.date.toISOString().split("T")[0]
+    : parsed.data.date !== undefined ? String(parsed.data.date) : undefined;
+  const [row] = await db
+    .update(calendarEventsTable)
+    .set({
+      title: parsed.data.title,
+      date: dateStr,
+      description: parsed.data.description,
+      updatedAt: new Date(),
+    })
+    .where(eq(calendarEventsTable.id, id))
+    .returning();
+  if (!row) {
+    res.status(404).json({ error: "Calendar event not found" });
+    return;
+  }
+  res.json(row);
+});
+
+router.delete("/calendar-events/:id", async (req: Request, res: Response) => {
+  const { id } = DeleteCalendarEventParams.parse(req.params);
+  await db.delete(calendarEventsTable).where(eq(calendarEventsTable.id, id));
+  res.status(204).end();
+});
+
+export default router;

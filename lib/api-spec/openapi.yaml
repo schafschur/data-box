@@ -3,20 +3,36 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Databox — data workspace API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: categories
+    description: Project categories
+  - name: instances
+    description: Project instances
+  - name: blocks
+    description: Content blocks
+  - name: todo-items
+    description: To-do items within a block
+  - name: calendar-events
+    description: Calendar events within a block
+  - name: photos
+    description: Photos within a block
+  - name: analysis
+    description: Analysis of instance data
+  - name: storage
+    description: Object storage
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +40,580 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ─── Categories ───────────────────────────────────────────────────────────
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List all categories
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+    post:
+      operationId: createCategory
+      tags: [categories]
+      summary: Create a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "201":
+          description: Created category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+
+  /categories/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      operationId: getCategory
+      tags: [categories]
+      summary: Get a category by ID
+      responses:
+        "200":
+          description: Category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateCategory
+      tags: [categories]
+      summary: Update a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "200":
+          description: Updated category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteCategory
+      tags: [categories]
+      summary: Delete a category
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── Instances ────────────────────────────────────────────────────────────
+  /categories/{categoryId}/instances:
+    parameters:
+      - name: categoryId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      operationId: listInstances
+      tags: [instances]
+      summary: List instances in a category
+      responses:
+        "200":
+          description: List of instances
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Instance"
+    post:
+      operationId: createInstance
+      tags: [instances]
+      summary: Create an instance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InstanceInput"
+      responses:
+        "201":
+          description: Created instance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Instance"
+
+  /instances/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      operationId: getInstance
+      tags: [instances]
+      summary: Get an instance by ID
+      responses:
+        "200":
+          description: Instance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Instance"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateInstance
+      tags: [instances]
+      summary: Update an instance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InstanceInput"
+      responses:
+        "200":
+          description: Updated instance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Instance"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteInstance
+      tags: [instances]
+      summary: Delete an instance
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── Blocks ───────────────────────────────────────────────────────────────
+  /instances/{instanceId}/blocks:
+    parameters:
+      - name: instanceId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      operationId: listBlocks
+      tags: [blocks]
+      summary: List blocks in an instance
+      responses:
+        "200":
+          description: List of blocks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Block"
+    post:
+      operationId: createBlock
+      tags: [blocks]
+      summary: Create a block
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlockInput"
+      responses:
+        "201":
+          description: Created block
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Block"
+
+  /blocks/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      operationId: getBlock
+      tags: [blocks]
+      summary: Get a block by ID
+      responses:
+        "200":
+          description: Block
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Block"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateBlock
+      tags: [blocks]
+      summary: Update a block (title or content)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlockUpdate"
+      responses:
+        "200":
+          description: Updated block
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Block"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteBlock
+      tags: [blocks]
+      summary: Delete a block
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── Todo Items ───────────────────────────────────────────────────────────
+  /blocks/{blockId}/todo-items:
+    parameters:
+      - name: blockId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      operationId: listTodoItems
+      tags: [todo-items]
+      summary: List todo items in a block
+      responses:
+        "200":
+          description: List of todo items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TodoItem"
+    post:
+      operationId: createTodoItem
+      tags: [todo-items]
+      summary: Create a todo item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TodoItemInput"
+      responses:
+        "201":
+          description: Created todo item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TodoItem"
+
+  /todo-items/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    put:
+      operationId: updateTodoItem
+      tags: [todo-items]
+      summary: Update a todo item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TodoItemUpdate"
+      responses:
+        "200":
+          description: Updated todo item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TodoItem"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteTodoItem
+      tags: [todo-items]
+      summary: Delete a todo item
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── Calendar Events ──────────────────────────────────────────────────────
+  /blocks/{blockId}/calendar-events:
+    parameters:
+      - name: blockId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      operationId: listCalendarEvents
+      tags: [calendar-events]
+      summary: List calendar events in a block
+      responses:
+        "200":
+          description: List of calendar events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CalendarEvent"
+    post:
+      operationId: createCalendarEvent
+      tags: [calendar-events]
+      summary: Create a calendar event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CalendarEventInput"
+      responses:
+        "201":
+          description: Created calendar event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarEvent"
+
+  /calendar-events/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    put:
+      operationId: updateCalendarEvent
+      tags: [calendar-events]
+      summary: Update a calendar event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CalendarEventInput"
+      responses:
+        "200":
+          description: Updated calendar event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarEvent"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteCalendarEvent
+      tags: [calendar-events]
+      summary: Delete a calendar event
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── Photos ───────────────────────────────────────────────────────────────
+  /blocks/{blockId}/photos:
+    parameters:
+      - name: blockId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      operationId: listPhotos
+      tags: [photos]
+      summary: List photos in a block
+      responses:
+        "200":
+          description: List of photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Photo"
+    post:
+      operationId: addPhoto
+      tags: [photos]
+      summary: Add a photo record (after upload to storage)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhotoInput"
+      responses:
+        "201":
+          description: Created photo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Photo"
+
+  /photos/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    put:
+      operationId: updatePhoto
+      tags: [photos]
+      summary: Update a photo caption
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhotoUpdate"
+      responses:
+        "200":
+          description: Updated photo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Photo"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deletePhoto
+      tags: [photos]
+      summary: Delete a photo
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── Analysis ─────────────────────────────────────────────────────────────
+  /instances/{id}/analysis:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      operationId: getInstanceAnalysis
+      tags: [analysis]
+      summary: Get analysis stats for an instance
+      responses:
+        "200":
+          description: Analysis data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InstanceAnalysis"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── Storage ──────────────────────────────────────────────────────────────
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a presigned upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlRequest"
+      responses:
+        "200":
+          description: Presigned upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+
+  /storage/objects/{objectPath}:
+    parameters:
+      - name: objectPath
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getStorageObject
+      tags: [storage]
+      summary: Serve a stored object
+      responses:
+        "200":
+          description: Object file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +621,327 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    # ── Categories ────────────────────────────────────────────────────────
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        color:
+          type: ["string", "null"]
+        instanceCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, instanceCount, createdAt, updatedAt]
+
+    CategoryInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        color:
+          type: ["string", "null"]
+      required: [name]
+
+    # ── Instances ─────────────────────────────────────────────────────────
+    Instance:
+      type: object
+      properties:
+        id:
+          type: integer
+        categoryId:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        blockCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, categoryId, name, blockCount, createdAt, updatedAt]
+
+    InstanceInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+      required: [name]
+
+    # ── Blocks ────────────────────────────────────────────────────────────
+    Block:
+      type: object
+      properties:
+        id:
+          type: integer
+        instanceId:
+          type: integer
+        type:
+          type: string
+          enum: [richtext, todo, calendar, photo]
+        title:
+          type: ["string", "null"]
+        position:
+          type: integer
+        content:
+          description: Rich text HTML (for richtext blocks)
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, instanceId, type, position, createdAt, updatedAt]
+
+    BlockInput:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [richtext, todo, calendar, photo]
+        title:
+          type: ["string", "null"]
+      required: [type]
+
+    BlockUpdate:
+      type: object
+      properties:
+        title:
+          type: ["string", "null"]
+        content:
+          type: ["string", "null"]
+
+    # ── Todo Items ────────────────────────────────────────────────────────
+    TodoItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        blockId:
+          type: integer
+        text:
+          type: string
+        completed:
+          type: boolean
+        position:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, blockId, text, completed, position, createdAt, updatedAt]
+
+    TodoItemInput:
+      type: object
+      properties:
+        text:
+          type: string
+      required: [text]
+
+    TodoItemUpdate:
+      type: object
+      properties:
+        text:
+          type: string
+        completed:
+          type: boolean
+
+    # ── Calendar Events ───────────────────────────────────────────────────
+    CalendarEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        blockId:
+          type: integer
+        title:
+          type: string
+        date:
+          type: string
+          format: date
+        description:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, blockId, title, date, createdAt, updatedAt]
+
+    CalendarEventInput:
+      type: object
+      properties:
+        title:
+          type: string
+        date:
+          type: string
+          format: date
+        description:
+          type: ["string", "null"]
+      required: [title, date]
+
+    # ── Photos ────────────────────────────────────────────────────────────
+    Photo:
+      type: object
+      properties:
+        id:
+          type: integer
+        blockId:
+          type: integer
+        objectPath:
+          type: string
+        caption:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, blockId, objectPath, createdAt, updatedAt]
+
+    PhotoInput:
+      type: object
+      properties:
+        objectPath:
+          type: string
+        caption:
+          type: ["string", "null"]
+      required: [objectPath]
+
+    PhotoUpdate:
+      type: object
+      properties:
+        caption:
+          type: ["string", "null"]
+
+    # ── Analysis ──────────────────────────────────────────────────────────
+    InstanceAnalysis:
+      type: object
+      properties:
+        instanceId:
+          type: integer
+        totalBlocks:
+          type: integer
+        textStats:
+          $ref: "#/components/schemas/TextStats"
+        todoStats:
+          $ref: "#/components/schemas/TodoStats"
+        calendarStats:
+          $ref: "#/components/schemas/CalendarStats"
+        photoStats:
+          $ref: "#/components/schemas/PhotoStats"
+      required: [instanceId, totalBlocks, textStats, todoStats, calendarStats, photoStats]
+
+    TextStats:
+      type: object
+      properties:
+        blockCount:
+          type: integer
+        totalWordCount:
+          type: integer
+        topKeywords:
+          type: array
+          items:
+            $ref: "#/components/schemas/KeywordCount"
+      required: [blockCount, totalWordCount, topKeywords]
+
+    KeywordCount:
+      type: object
+      properties:
+        word:
+          type: string
+        count:
+          type: integer
+      required: [word, count]
+
+    TodoStats:
+      type: object
+      properties:
+        blockCount:
+          type: integer
+        totalItems:
+          type: integer
+        completedItems:
+          type: integer
+        completionRate:
+          type: number
+          format: float
+      required: [blockCount, totalItems, completedItems, completionRate]
+
+    CalendarStats:
+      type: object
+      properties:
+        blockCount:
+          type: integer
+        totalEvents:
+          type: integer
+        upcomingEvents:
+          type: integer
+        overdueEvents:
+          type: integer
+        nextEvent:
+          anyOf:
+            - $ref: "#/components/schemas/CalendarEvent"
+            - type: "null"
+      required: [blockCount, totalEvents, upcomingEvents, overdueEvents]
+
+    PhotoStats:
+      type: object
+      properties:
+        blockCount:
+          type: integer
+        totalPhotos:
+          type: integer
+      required: [blockCount, totalPhotos]
+
+    # ── Storage ───────────────────────────────────────────────────────────
+    UploadUrlRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        size:
+          type: integer
+        contentType:
+          type: string
+      required: [name, size, contentType]
+
+    UploadUrlResponse:
+      type: object
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
+      required: [uploadURL, objectPath]

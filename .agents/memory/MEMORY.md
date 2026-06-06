@@ -1,0 +1,4 @@
+- [Orval body schema naming](orval-body-schema-naming.md) — API spec body schemas must use entity-shaped names to avoid TS2308 collisions; openapi.md reference has the full rule.
+- [Object storage React overrides](object-storage-react-overrides.md) — Uppy v5 peer dep issue: use explicit "19.1.0" version, not "$react", in pnpm overrides since root package.json has no react dep.
+- [Drizzle date column coercion](drizzle-date-coercion.md) — Orval coerces OpenAPI `format: date` fields to Date objects; Drizzle `date()` column wants a string; convert with `.toISOString().split('T')[0]`.
+- [CSS @import order with Tailwind v4](css-import-order-tailwind.md) — Google Fonts @import url() in CSS file gets placed after Tailwind processed output, causing PostCSS error; put it in index.html as a <link> tag instead.
