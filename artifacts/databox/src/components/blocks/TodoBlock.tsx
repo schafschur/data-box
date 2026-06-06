@@ -24,7 +24,7 @@ export function TodoBlock({ block }: { block: Block }) {
     e.preventDefault();
     if (!newItemText.trim()) return;
     createTodo.mutate(
-      { data: { text: newItemText, blockId: block.id } as any },
+      { blockId: block.id, data: { text: newItemText } },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListTodoItemsQueryKey(block.id) });

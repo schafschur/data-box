@@ -23,7 +23,7 @@ export function CalendarBlock({ block }: { block: Block }) {
     e.preventDefault();
     if (!newTitle.trim() || !newDate) return;
     createEvent.mutate(
-      { data: { title: newTitle, date: newDate, blockId: block.id } as any },
+      { blockId: block.id, data: { title: newTitle, date: newDate } },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListCalendarEventsQueryKey(block.id) });

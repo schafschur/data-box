@@ -8,9 +8,10 @@ import { CreateBlockDialog } from "@/components/forms/CreateBlockDialog";
 import { EditInstanceDialog } from "@/components/forms/EditInstanceDialog";
 import { BlockRenderer } from "@/components/blocks/BlockRenderer";
 import { AnalysisPanel } from "@/components/blocks/AnalysisPanel";
-import { Settings, Trash2, Edit, ChevronRight } from "lucide-react";
+import { Settings, Trash2, Edit, ChevronRight, BarChart2, Layers } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 export function InstanceDetail() {
   const { instanceId } = useParams();
@@ -19,6 +20,7 @@ export function InstanceDetail() {
   const queryClient = useQueryClient();
 
   const [editOpen, setEditOpen] = useState(false);
+  const [mobileTab, setMobileTab] = useState<"blocks" | "analysis">("blocks");
 
   const { data: instance, isLoading: isInstanceLoading } = useGetInstance(id, {
     query: { enabled: !!id, queryKey: getGetInstanceQueryKey(id) }
@@ -48,13 +50,14 @@ export function InstanceDetail() {
     }
   };
 
+  const hasBlocks = !isBlocksLoading && blocks && blocks.length > 0;
+
   return (
     <AppLayout>
-      <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out pb-20">
-        
-        {/* Breadcrumb back to category */}
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out pb-20">
+
         {instance && (
-          <div className="flex items-center text-sm text-muted-foreground font-medium mb-[-1rem]">
+          <div className="flex items-center text-sm text-muted-foreground font-medium mb-4">
             <Link href={`/categories/${instance.categoryId}`} className="hover:text-foreground transition-colors">
               Category
             </Link>
@@ -63,7 +66,7 @@ export function InstanceDetail() {
           </div>
         )}
 
-        <div className="flex items-center justify-between border-b pb-6">
+        <div className="flex items-center justify-between border-b pb-6 mb-8">
           {isInstanceLoading ? (
             <div className="space-y-2">
               <Skeleton className="h-10 w-48" />
@@ -77,10 +80,9 @@ export function InstanceDetail() {
               )}
             </div>
           )}
-          
+
           <div className="flex items-center gap-2">
             <CreateBlockDialog instanceId={id} />
-            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -101,41 +103,78 @@ export function InstanceDetail() {
         </div>
 
         {instance && (
-          <EditInstanceDialog 
-            open={editOpen} 
-            onOpenChange={setEditOpen} 
-            instance={instance} 
+          <EditInstanceDialog
+            open={editOpen}
+            onOpenChange={setEditOpen}
+            instance={instance}
           />
         )}
 
-        <div className="space-y-8">
-          {isBlocksLoading ? (
-            <div className="space-y-6">
-              {[1, 2].map(i => (
-                <Skeleton key={i} className="h-64 w-full rounded-lg" />
-              ))}
-            </div>
-          ) : blocks?.length === 0 ? (
-             <div className="text-center py-20 border border-dashed rounded-lg bg-card/50">
-               <h3 className="text-xl font-serif text-muted-foreground mb-4">No blocks yet</h3>
-               <CreateBlockDialog instanceId={id} />
-             </div>
-          ) : (
-            <div className="space-y-12">
-              {blocks?.map((block) => (
-                <BlockRenderer key={block.id} block={block} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Analysis Panel */}
-        {!isBlocksLoading && blocks && blocks.length > 0 && (
-          <div className="pt-10 border-t mt-16">
-            <h2 className="text-2xl font-serif mb-6">Analysis</h2>
-            <AnalysisPanel instanceId={id} />
+        {/* Mobile tab bar — only shown when there are blocks */}
+        {hasBlocks && (
+          <div className="flex lg:hidden border-b mb-6 gap-0">
+            <button
+              onClick={() => setMobileTab("blocks")}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
+                mobileTab === "blocks"
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Layers className="w-4 h-4" />
+              Blocks
+            </button>
+            <button
+              onClick={() => setMobileTab("analysis")}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
+                mobileTab === "analysis"
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <BarChart2 className="w-4 h-4" />
+              Analysis
+            </button>
           </div>
         )}
+
+        {/* Desktop: two-column. Mobile: single-column controlled by tab */}
+        <div className={cn(hasBlocks ? "lg:grid lg:grid-cols-[1fr_320px] lg:gap-10" : "")}>
+          {/* Blocks column */}
+          <div className={cn(hasBlocks && mobileTab === "analysis" ? "hidden lg:block" : "block")}>
+            {isBlocksLoading ? (
+              <div className="space-y-6">
+                {[1, 2].map(i => (
+                  <Skeleton key={i} className="h-64 w-full rounded-lg" />
+                ))}
+              </div>
+            ) : blocks?.length === 0 ? (
+              <div className="text-center py-20 border border-dashed rounded-lg bg-card/50">
+                <h3 className="text-xl font-serif text-muted-foreground mb-4">No blocks yet</h3>
+                <CreateBlockDialog instanceId={id} />
+              </div>
+            ) : (
+              <div className="space-y-12">
+                {blocks?.map((block) => (
+                  <BlockRenderer key={block.id} block={block} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Analysis column — sticky sidebar on desktop, full-width tab on mobile */}
+          {hasBlocks && (
+            <aside className={cn(
+              mobileTab === "blocks" ? "hidden lg:block" : "block",
+              "lg:sticky lg:top-6 lg:self-start"
+            )}>
+              <h2 className="text-lg font-serif mb-4 hidden lg:block">Analysis</h2>
+              <AnalysisPanel instanceId={id} />
+            </aside>
+          )}
+        </div>
       </div>
     </AppLayout>
   );

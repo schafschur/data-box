@@ -45,7 +45,7 @@ export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
 
   const onSubmit = (data: z.infer<typeof schema>) => {
     createBlock.mutate(
-      { data: { ...data, instanceId } as any },
+      { instanceId, data },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListBlocksQueryKey(instanceId) });

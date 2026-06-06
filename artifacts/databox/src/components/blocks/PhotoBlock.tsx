@@ -47,7 +47,8 @@ export function PhotoBlock({ block }: { block: Block }) {
 
       // 3. Save reference in DB
       await addPhoto.mutateAsync({
-        data: { objectPath, blockId: block.id } as any
+        blockId: block.id,
+        data: { objectPath },
       });
 
       queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey(block.id) });
@@ -170,7 +171,8 @@ export function PhotoBlock({ block }: { block: Block }) {
         type="file" 
         ref={fileInputRef} 
         onChange={handleFileSelect} 
-        accept="image/*" 
+        accept="image/*"
+        capture="environment"
         className="hidden" 
       />
     </div>
