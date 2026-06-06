@@ -7,10 +7,12 @@
  */
 
 export * from './block';
+export * from './blockContent';
 export * from './blockInput';
 export * from './blockInputType';
 export * from './blockType';
 export * from './blockUpdate';
+export * from './blockUpdateContent';
 export * from './calendarEvent';
 export * from './calendarEventInput';
 export * from './calendarStats';

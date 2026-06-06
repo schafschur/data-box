@@ -59,13 +59,24 @@ router.get("/instances/:id/analysis", async (req: Request, res: Response) => {
   const calendarBlocks = blocks.filter((b) => b.type === "calendar");
   const photoBlocks = blocks.filter((b) => b.type === "photo");
 
+  // Extract HTML string from jsonb content object {html: "..."}
+  function getContentHtml(content: unknown): string {
+    if (!content) return "";
+    if (typeof content === "object" && content !== null && "html" in content) {
+      return String((content as { html: unknown }).html || "");
+    }
+    if (typeof content === "string") return content;
+    return "";
+  }
+
   // Text stats
   let totalWordCount = 0;
   const keywordFreq = new Map<string, number>();
   for (const b of textBlocks) {
-    if (b.content) {
-      totalWordCount += countWords(b.content);
-      for (const [w, c] of extractKeywords(b.content)) {
+    const html = getContentHtml(b.content);
+    if (html) {
+      totalWordCount += countWords(html);
+      for (const [w, c] of extractKeywords(html)) {
         keywordFreq.set(w, (keywordFreq.get(w) ?? 0) + c);
       }
     }

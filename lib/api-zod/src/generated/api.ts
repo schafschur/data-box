@@ -185,7 +185,9 @@ export const ListBlocksResponseItem = zod.object({
   "type": zod.enum(['richtext', 'todo', 'calendar', 'photo']),
   "title": zod.string().nullish(),
   "position": zod.number(),
-  "content": zod.string().nullish().describe('Rich text HTML (for richtext blocks)'),
+  "content": zod.object({
+
+}).passthrough().nullish().describe('Type-discriminated block content (e.g. {\"html\":\"...\"} for richtext blocks)'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -218,7 +220,9 @@ export const GetBlockResponse = zod.object({
   "type": zod.enum(['richtext', 'todo', 'calendar', 'photo']),
   "title": zod.string().nullish(),
   "position": zod.number(),
-  "content": zod.string().nullish().describe('Rich text HTML (for richtext blocks)'),
+  "content": zod.object({
+
+}).passthrough().nullish().describe('Type-discriminated block content (e.g. {\"html\":\"...\"} for richtext blocks)'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -233,7 +237,9 @@ export const UpdateBlockParams = zod.object({
 
 export const UpdateBlockBody = zod.object({
   "title": zod.string().nullish(),
-  "content": zod.string().nullish()
+  "content": zod.object({
+
+}).passthrough().nullish().describe('Type-discriminated block content object')
 })
 
 export const UpdateBlockResponse = zod.object({
@@ -242,7 +248,9 @@ export const UpdateBlockResponse = zod.object({
   "type": zod.enum(['richtext', 'todo', 'calendar', 'photo']),
   "title": zod.string().nullish(),
   "position": zod.number(),
-  "content": zod.string().nullish().describe('Rich text HTML (for richtext blocks)'),
+  "content": zod.object({
+
+}).passthrough().nullish().describe('Type-discriminated block content (e.g. {\"html\":\"...\"} for richtext blocks)'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })

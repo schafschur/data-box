@@ -5,6 +5,7 @@
  * Databox — data workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { BlockContent } from './blockContent';
 import type { BlockType } from './blockType';
 
 export interface Block {
@@ -15,10 +16,10 @@ export interface Block {
   title?: string | null;
   position: number;
   /**
-     * Rich text HTML (for richtext blocks)
+     * Type-discriminated block content (e.g. {"html":"..."} for richtext blocks)
      * @nullable
      */
-  content?: string | null;
+  content?: BlockContent;
   createdAt: Date;
   updatedAt: Date;
 }

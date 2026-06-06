@@ -10,6 +10,17 @@ const sanitize = (html: string) =>
     ALLOWED_ATTR: [],
   });
 
+type BlockContent = { html?: string } | null | unknown;
+
+function getHtml(content: BlockContent): string {
+  if (!content) return "";
+  if (typeof content === "object" && content !== null && "html" in (content as object)) {
+    return String((content as { html: unknown }).html || "");
+  }
+  if (typeof content === "string") return content;
+  return "";
+}
+
 type ToolbarAction = {
   icon: React.ReactNode;
   label: string;
@@ -31,18 +42,18 @@ const TOOLBAR: ToolbarAction[] = [
 export function RichTextBlock({ block }: { block: Block }) {
   const [isEditing, setIsEditing] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
-  const savedContent = useRef(block.content || "");
+  const savedHtml = useRef(getHtml(block.content));
   const updateBlock = useUpdateBlock();
 
   useEffect(() => {
-    savedContent.current = block.content || "";
+    savedHtml.current = getHtml(block.content);
   }, [block.content]);
 
   const startEditing = () => {
     setIsEditing(true);
     setTimeout(() => {
       if (editorRef.current) {
-        editorRef.current.innerHTML = sanitize(savedContent.current);
+        editorRef.current.innerHTML = sanitize(savedHtml.current);
         editorRef.current.focus();
         const range = document.createRange();
         range.selectNodeContents(editorRef.current);
@@ -56,8 +67,8 @@ export function RichTextBlock({ block }: { block: Block }) {
 
   const handleSave = () => {
     const html = sanitize(editorRef.current?.innerHTML || "");
-    savedContent.current = html;
-    updateBlock.mutate({ id: block.id, data: { content: html } });
+    savedHtml.current = html;
+    updateBlock.mutate({ id: block.id, data: { content: { html } } });
     setIsEditing(false);
   };
 
@@ -72,16 +83,13 @@ export function RichTextBlock({ block }: { block: Block }) {
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Escape") handleCancel();
-    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-      e.preventDefault();
-      handleSave();
-    }
+    if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); handleSave(); }
     if ((e.ctrlKey || e.metaKey) && e.key === "b") { e.preventDefault(); execFormat("bold"); }
     if ((e.ctrlKey || e.metaKey) && e.key === "i") { e.preventDefault(); execFormat("italic"); }
     if ((e.ctrlKey || e.metaKey) && e.key === "u") { e.preventDefault(); execFormat("underline"); }
   };
 
-  const displayHtml = sanitize(savedContent.current || block.content || "");
+  const displayHtml = sanitize(getHtml(block.content));
 
   return (
     <div className="group">

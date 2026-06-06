@@ -60,6 +60,12 @@ export const BlockType = {
   photo: 'photo',
 } as const;
 
+/**
+ * Type-discriminated block content (e.g. {"html":"..."} for richtext blocks)
+ * @nullable
+ */
+export type BlockContent = { [key: string]: unknown } | null;
+
 export interface Block {
   id: number;
   instanceId: number;
@@ -68,10 +74,10 @@ export interface Block {
   title?: string | null;
   position: number;
   /**
-     * Rich text HTML (for richtext blocks)
+     * Type-discriminated block content (e.g. {"html":"..."} for richtext blocks)
      * @nullable
      */
-  content?: string | null;
+  content?: BlockContent;
   createdAt: string;
   updatedAt: string;
 }
@@ -92,11 +98,20 @@ export interface BlockInput {
   title?: string | null;
 }
 
+/**
+ * Type-discriminated block content object
+ * @nullable
+ */
+export type BlockUpdateContent = { [key: string]: unknown } | null;
+
 export interface BlockUpdate {
   /** @nullable */
   title?: string | null;
-  /** @nullable */
-  content?: string | null;
+  /**
+     * Type-discriminated block content object
+     * @nullable
+     */
+  content?: BlockUpdateContent;
 }
 
 export interface TodoItem {

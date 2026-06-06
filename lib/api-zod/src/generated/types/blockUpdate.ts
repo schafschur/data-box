@@ -5,10 +5,14 @@
  * Databox — data workspace API
  * OpenAPI spec version: 0.1.0
  */
+import type { BlockUpdateContent } from './blockUpdateContent';
 
 export interface BlockUpdate {
   /** @nullable */
   title?: string | null;
-  /** @nullable */
-  content?: string | null;
+  /**
+     * Type-discriminated block content object
+     * @nullable
+     */
+  content?: BlockUpdateContent;
 }

@@ -741,8 +741,8 @@ components:
         position:
           type: integer
         content:
-          description: Rich text HTML (for richtext blocks)
-          type: ["string", "null"]
+          description: Type-discriminated block content (e.g. {"html":"..."} for richtext blocks)
+          type: ["object", "null"]
         createdAt:
           type: string
           format: date-time
@@ -767,7 +767,8 @@ components:
         title:
           type: ["string", "null"]
         content:
-          type: ["string", "null"]
+          description: Type-discriminated block content object
+          type: ["object", "null"]
 
     # ── Todo Items ────────────────────────────────────────────────────────
     TodoItem:
