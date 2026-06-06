@@ -8,6 +8,8 @@ import { CalendarBlock } from "./CalendarBlock";
 import { PhotoBlock } from "./PhotoBlock";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
+import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
+import type { DraggableAttributes } from "@dnd-kit/core";
 
 const ICONS = {
   richtext: FileText,
@@ -16,7 +18,14 @@ const ICONS = {
   photo: ImageIcon,
 };
 
-export function BlockRenderer({ block }: { block: Block }) {
+interface BlockRendererProps {
+  block: Block;
+  dragHandleRef?: (node: HTMLElement | null) => void;
+  dragHandleAttributes?: DraggableAttributes;
+  dragHandleListeners?: SyntheticListenerMap;
+}
+
+export function BlockRenderer({ block, dragHandleRef, dragHandleAttributes, dragHandleListeners }: BlockRendererProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [title, setTitle] = useState(block.title || "");
   const queryClient = useQueryClient();
@@ -52,7 +61,12 @@ export function BlockRenderer({ block }: { block: Block }) {
 
   return (
     <div className="group relative bg-card rounded-xl shadow-sm border border-card-border overflow-hidden transition-shadow hover:shadow-md">
-      <div className="absolute left-0 top-0 bottom-0 w-8 bg-muted/30 flex items-start justify-center pt-4 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab">
+      <div
+        ref={dragHandleRef}
+        {...dragHandleAttributes}
+        {...dragHandleListeners}
+        className="absolute left-0 top-0 bottom-0 w-8 bg-muted/30 flex items-start justify-center pt-4 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing touch-none"
+      >
         <GripVertical className="w-4 h-4 text-muted-foreground" />
       </div>
       

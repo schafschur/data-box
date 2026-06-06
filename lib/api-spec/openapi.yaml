@@ -262,6 +262,33 @@ paths:
               schema:
                 $ref: "#/components/schemas/Block"
 
+  /instances/{instanceId}/blocks/reorder:
+    parameters:
+      - name: instanceId
+        in: path
+        required: true
+        schema:
+          type: integer
+    put:
+      operationId: reorderBlocks
+      tags: [blocks]
+      summary: Reorder blocks in bulk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlockReorderBody"
+      responses:
+        "200":
+          description: Updated blocks in new order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Block"
+
   /blocks/{id}:
     parameters:
       - name: id
@@ -750,6 +777,16 @@ components:
           type: string
           format: date-time
       required: [id, instanceId, type, position, createdAt, updatedAt]
+
+    BlockReorderBody:
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+          description: Ordered list of block IDs (first = position 0)
+      required: [ids]
 
     BlockInput:
       type: object

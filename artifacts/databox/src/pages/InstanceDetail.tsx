@@ -1,17 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useGetInstance, useListBlocks, useDeleteInstance, getGetInstanceQueryKey, getListBlocksQueryKey, getListInstancesQueryKey } from "@workspace/api-client-react";
+import { useGetInstance, useListBlocks, useDeleteInstance, useReorderBlocks, getGetInstanceQueryKey, getListBlocksQueryKey, getListInstancesQueryKey } from "@workspace/api-client-react";
+import type { Block } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { CreateBlockDialog } from "@/components/forms/CreateBlockDialog";
 import { EditInstanceDialog } from "@/components/forms/EditInstanceDialog";
-import { BlockRenderer } from "@/components/blocks/BlockRenderer";
+import { SortableBlockRenderer } from "@/components/blocks/SortableBlockRenderer";
 import { AnalysisPanel } from "@/components/blocks/AnalysisPanel";
 import { Settings, Trash2, Edit, ChevronRight, BarChart2, Layers } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
 
 export function InstanceDetail() {
   const { instanceId } = useParams();
@@ -21,6 +36,7 @@ export function InstanceDetail() {
 
   const [editOpen, setEditOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<"blocks" | "analysis">("blocks");
+  const [localBlocks, setLocalBlocks] = useState<Block[]>([]);
 
   const { data: instance, isLoading: isInstanceLoading } = useGetInstance(id, {
     query: { enabled: !!id, queryKey: getGetInstanceQueryKey(id) }
@@ -30,7 +46,43 @@ export function InstanceDetail() {
     query: { enabled: !!id, queryKey: getListBlocksQueryKey(id) }
   });
 
+  useEffect(() => {
+    if (blocks) {
+      setLocalBlocks(blocks);
+    }
+  }, [blocks]);
+
   const deleteInstance = useDeleteInstance();
+  const reorderBlocks = useReorderBlocks();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = localBlocks.findIndex((b) => b.id === active.id);
+    const newIndex = localBlocks.findIndex((b) => b.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(localBlocks, oldIndex, newIndex);
+    setLocalBlocks(reordered);
+
+    reorderBlocks.mutate(
+      { instanceId: id, data: { ids: reordered.map((b) => b.id) } },
+      {
+        onSuccess: (updatedBlocks) => {
+          queryClient.setQueryData(getListBlocksQueryKey(id), updatedBlocks);
+        },
+        onError: () => {
+          setLocalBlocks(blocks ?? []);
+        },
+      }
+    );
+  };
 
   const handleDelete = () => {
     if (confirm(`Are you sure you want to delete "${instance?.name}"?`)) {
@@ -50,7 +102,7 @@ export function InstanceDetail() {
     }
   };
 
-  const hasBlocks = !isBlocksLoading && blocks && blocks.length > 0;
+  const hasBlocks = !isBlocksLoading && localBlocks.length > 0;
 
   return (
     <AppLayout>
@@ -150,17 +202,28 @@ export function InstanceDetail() {
                   <Skeleton key={i} className="h-64 w-full rounded-lg" />
                 ))}
               </div>
-            ) : blocks?.length === 0 ? (
+            ) : localBlocks.length === 0 ? (
               <div className="text-center py-20 border border-dashed rounded-lg bg-card/50">
                 <h3 className="text-xl font-serif text-muted-foreground mb-4">No blocks yet</h3>
                 <CreateBlockDialog instanceId={id} />
               </div>
             ) : (
-              <div className="space-y-12">
-                {blocks?.map((block) => (
-                  <BlockRenderer key={block.id} block={block} />
-                ))}
-              </div>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={localBlocks.map((b) => b.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-12">
+                    {localBlocks.map((block) => (
+                      <SortableBlockRenderer key={block.id} block={block} />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             )}
           </div>
 

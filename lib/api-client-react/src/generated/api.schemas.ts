@@ -114,6 +114,11 @@ export interface BlockUpdate {
   content?: BlockUpdateContent;
 }
 
+export interface BlockReorderBody {
+  /** Ordered list of block IDs (first = position 0) */
+  ids: number[];
+}
+
 export interface TodoItem {
   id: number;
   blockId: number;

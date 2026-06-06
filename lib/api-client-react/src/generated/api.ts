@@ -22,6 +22,7 @@ import type {
 import type {
   Block,
   BlockInput,
+  BlockReorderBody,
   BlockUpdate,
   CalendarEvent,
   CalendarEventInput,
@@ -1014,6 +1015,76 @@ export const useCreateBlock = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateBlockMutationOptions(options));
+    }
+
+export const getReorderBlocksUrl = (instanceId: number,) => {
+
+
+
+
+  return `/api/instances/${instanceId}/blocks/reorder`
+}
+
+/**
+ * @summary Reorder blocks in bulk
+ */
+export const reorderBlocks = async (instanceId: number,
+    blockReorderBody: BlockReorderBody, options?: RequestInit): Promise<Block[]> => {
+
+  return customFetch<Block[]>(getReorderBlocksUrl(instanceId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      blockReorderBody,)
+  }
+);}
+
+
+
+
+export const getReorderBlocksMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderBlocks>>, TError,{instanceId: number;data: BodyType<BlockReorderBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reorderBlocks>>, TError,{instanceId: number;data: BodyType<BlockReorderBody>}, TContext> => {
+
+const mutationKey = ['reorderBlocks'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reorderBlocks>>, {instanceId: number;data: BodyType<BlockReorderBody>}> = (props) => {
+          const {instanceId,data} = props ?? {};
+
+          return  reorderBlocks(instanceId,data,requestOptions)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReorderBlocksMutationResult = NonNullable<Awaited<ReturnType<typeof reorderBlocks>>>
+    export type ReorderBlocksMutationBody = BodyType<BlockReorderBody>
+    export type ReorderBlocksMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Reorder blocks in bulk
+ */
+export const useReorderBlocks = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderBlocks>>, TError,{instanceId: number;data: BodyType<BlockReorderBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reorderBlocks>>,
+        TError,
+        {instanceId: number;data: BodyType<BlockReorderBody>},
+        TContext
+      > => {
+      return useMutation(getReorderBlocksMutationOptions(options));
     }
 
 export const getGetBlockUrl = (id: number,) => {

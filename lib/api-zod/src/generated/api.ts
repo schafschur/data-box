@@ -208,6 +208,18 @@ export const CreateBlockBody = zod.object({
 
 
 /**
+ * @summary Reorder blocks in an instance
+ */
+export const ReorderBlocksParams = zod.object({
+  "instanceId": zod.coerce.number()
+})
+
+export const ReorderBlocksBody = zod.object({
+  "ids": zod.array(zod.number())
+})
+
+
+/**
  * @summary Get a block by ID
  */
 export const GetBlockParams = zod.object({
