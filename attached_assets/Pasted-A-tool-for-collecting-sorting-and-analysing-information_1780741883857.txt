@@ -1,0 +1,22 @@
+A tool for collecting, sorting and analysing information / data:
+
+Features: 
+	- allows the creation of project categories (examples: vacations, school, inventory etc)
+	- within a project category, the user can create multiple instances of this type of projects (example: category: vacations, instances: Italy 2026, Christmas 2026 and so on) 	- within a specific instance are tools to organise saved data that the user can add dynamically (examples: a text collection, a to do list, a calendar with deadlines and so on) 	- within a specific instance there is also a section where the saved data for that instance is analysed and correlations and dependencies between the types of data are displayed (example: the Christmas 2026 instances contains an itinerary from a travel agency with dates. These dates are visualised on a timeline with dependencies with a to do list that is found in the saved data section of the instance)
+- The tool consists over all of a desktop version and a smartphone version (readability and responsiveness are to be taken into account) - the desktop version is more detailed and has more emphasis on the analytical side of things, where as the smartphone version is somewhat simpler and has more emphasis on the collection of data side of the tool (taking photos and saving them as part of the data collection of a project instance as an example)
+
+This is a first draft of the tool I would like to build, more details will be implemented as we go.  Technical side: 
+- I propose react for the Frontend and postgresql for the backend. But I am open to other suggestions 
+- This tool will at first only be used by me, so it will be published but doesn’t need to be publicly available at first. This might change later
+
+
+Stack suggestion for your new project:
+* React + Vite frontend (desktop-first, responsive for mobile)
+* Express + PostgreSQL backend API
+* @loristianne/react-richtext-editor for any text collection widgets
+* No auth initially — add it later when you're ready to share/publish
+Core data model to plan around:
+Category → many Instances → many Blocks (text, todo, calendar, photos, etc.)
+
+Each "block" inside an instance is a typed widget — the richtext editor handles text blocks, and you'd add more widget types over time (todo lists, date/timeline, image gallery, etc.).
+When you create the new Replit, I'd suggest starting it as a pnpm monorepo with the same structure as this one — a web app artifact and an api-server artifact sharing a packages/ layer. That way it'll be easy to add the mobile-responsive view and keep shared types between frontend and backend.
