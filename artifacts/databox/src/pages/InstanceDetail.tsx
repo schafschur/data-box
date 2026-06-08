@@ -9,6 +9,7 @@ import { EditInstanceDialog } from "@/components/forms/EditInstanceDialog";
 import { BlockRenderer } from "@/components/blocks/BlockRenderer";
 import { AnalysisPanel } from "@/components/blocks/AnalysisPanel";
 import { MapView } from "@/components/blocks/MapView";
+import { InstanceSearch } from "@/components/blocks/InstanceSearch";
 import { Settings, Trash2, Edit, ChevronRight, BarChart2, Layers, Network } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -22,6 +23,17 @@ export function InstanceDetail() {
 
   const [editOpen, setEditOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"blocks" | "analysis" | "map">("blocks");
+  const [highlightedBlockId, setHighlightedBlockId] = useState<number | null>(null);
+
+  function handleSearchNavigate(blockId: number) {
+    setActiveTab("blocks");
+    setHighlightedBlockId(blockId);
+    setTimeout(() => {
+      const el = document.getElementById(`block-${blockId}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+    setTimeout(() => setHighlightedBlockId(null), 2000);
+  }
 
   const { data: instance, isLoading: isInstanceLoading } = useGetInstance(id, {
     query: { enabled: !!id, queryKey: getGetInstanceQueryKey(id) }
@@ -133,6 +145,13 @@ export function InstanceDetail() {
           />
         )}
 
+        {/* Instance-scoped search */}
+        {hasBlocks && (
+          <div className="mb-6">
+            <InstanceSearch instanceId={id} onNavigate={handleSearchNavigate} />
+          </div>
+        )}
+
         {/* Tab bar — always visible when there are blocks */}
         {hasBlocks && (
           <div className="flex border-b mb-6 gap-0">
@@ -191,7 +210,16 @@ export function InstanceDetail() {
           ) : (
             <div className="space-y-12">
               {(blocks ?? []).map((block) => (
-                <div key={block.id} id={`block-${block.id}`}>
+                <div
+                  key={block.id}
+                  id={`block-${block.id}`}
+                  className={cn(
+                    "rounded-xl transition-shadow duration-500",
+                    highlightedBlockId === block.id
+                      ? "ring-2 ring-primary/60 ring-offset-2 shadow-lg shadow-primary/10"
+                      : ""
+                  )}
+                >
                   <BlockRenderer block={block} />
                 </div>
               ))}
