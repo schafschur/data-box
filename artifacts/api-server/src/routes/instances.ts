@@ -104,6 +104,25 @@ router.put("/instances/:id", async (req: Request, res: Response) => {
   res.json(withCount);
 });
 
+router.patch("/instances/:id/move", async (req: Request, res: Response) => {
+  const { id } = UpdateInstanceParams.parse(req.params);
+  const { categoryId } = req.body as { categoryId: unknown };
+  if (typeof categoryId !== "number" || !Number.isInteger(categoryId) || categoryId <= 0) {
+    res.status(400).json({ error: "Invalid categoryId" });
+    return;
+  }
+  const [row] = await db
+    .update(instancesTable)
+    .set({ categoryId, updatedAt: new Date() })
+    .where(eq(instancesTable.id, id))
+    .returning();
+  if (!row) {
+    res.status(404).json({ error: "Instance not found" });
+    return;
+  }
+  res.json(row);
+});
+
 router.delete("/instances/:id", async (req: Request, res: Response) => {
   const { id } = DeleteInstanceParams.parse(req.params);
   await db.delete(instancesTable).where(eq(instancesTable.id, id));

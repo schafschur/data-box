@@ -7,9 +7,94 @@ import { EditCategoryDialog } from "@/components/forms/EditCategoryDialog";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Settings, Trash2, Edit } from "lucide-react";
+import { Settings, Trash2, Edit, GripVertical } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import { useDrag, type DragState } from "@/contexts/DragContext";
+import type { InstanceWithBlockCount, Category } from "@workspace/api-client-react";
+
+function DraggableInstanceCard({
+  instance,
+  category,
+}: {
+  instance: InstanceWithBlockCount;
+  category: Category | undefined;
+}) {
+  const { dragging, setDragging } = useDrag();
+  const [isDraggingThis, setIsDraggingThis] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleDragStart = (e: React.DragEvent) => {
+    setIsDraggingThis(true);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("instanceId", String(instance.id));
+    const state: DragState = {
+      instanceId: instance.id,
+      fromCategoryId: instance.categoryId,
+      instanceName: instance.name,
+    };
+    setDragging(state);
+  };
+
+  const handleDragEnd = () => {
+    setIsDraggingThis(false);
+    setDragging(null);
+  };
+
+  const isAnyDragging = !!dragging;
+
+  return (
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      className={cn(
+        "group/card transition-all duration-150 select-none",
+        isDraggingThis ? "opacity-40 scale-95 cursor-grabbing" : "cursor-grab",
+        isAnyDragging && !isDraggingThis && "opacity-75",
+      )}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <Link href={`/instances/${instance.id}`}>
+        <Card
+          className="transition-all hover-elevate h-full flex flex-col justify-between relative overflow-hidden"
+          style={{
+            borderColor: isHovered && !isAnyDragging
+              ? `${category?.color}80`
+              : undefined,
+          }}
+        >
+          <div
+            className="absolute top-2 right-2 opacity-0 group-hover/card:opacity-40 transition-opacity"
+            title="Drag to move to another category"
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <CardHeader>
+            <CardTitle
+              className="font-serif text-xl transition-colors pr-4"
+              style={{
+                color: isHovered && !isAnyDragging ? category?.color : undefined,
+              }}
+            >
+              {instance.name}
+            </CardTitle>
+            {instance.description && (
+              <CardDescription className="mt-2 line-clamp-2">
+                {instance.description}
+              </CardDescription>
+            )}
+            <div className="text-xs font-medium text-muted-foreground mt-4 uppercase tracking-wider flex gap-4">
+              <span>{instance.blockCount} {instance.blockCount === 1 ? "block" : "blocks"}</span>
+            </div>
+          </CardHeader>
+        </Card>
+      </Link>
+    </div>
+  );
+}
 
 export function CategoryDetail() {
   const { categoryId } = useParams();
@@ -18,7 +103,6 @@ export function CategoryDetail() {
   const queryClient = useQueryClient();
 
   const [editOpen, setEditOpen] = useState(false);
-  const [hoveredInstanceId, setHoveredInstanceId] = useState<number | null>(null);
 
   const { data: category, isLoading: isCategoryLoading } = useGetCategory(id, {
     query: { enabled: !!id, queryKey: getGetCategoryQueryKey(id) }
@@ -56,9 +140,9 @@ export function CategoryDetail() {
           ) : (
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <div 
-                  className="w-4 h-4 rounded-full" 
-                  style={{ backgroundColor: category?.color || 'var(--primary)' }}
+                <div
+                  className="w-4 h-4 rounded-full"
+                  style={{ backgroundColor: category?.color || "var(--primary)" }}
                 />
                 <h1 className="text-4xl font-serif tracking-tight text-foreground">{category?.name}</h1>
               </div>
@@ -67,10 +151,10 @@ export function CategoryDetail() {
               )}
             </div>
           )}
-          
+
           <div className="flex items-center gap-2">
             <CreateInstanceDialog categoryId={id} />
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -91,10 +175,10 @@ export function CategoryDetail() {
         </div>
 
         {category && (
-          <EditCategoryDialog 
-            open={editOpen} 
-            onOpenChange={setEditOpen} 
-            category={category} 
+          <EditCategoryDialog
+            open={editOpen}
+            onOpenChange={setEditOpen}
+            category={category}
           />
         )}
 
@@ -112,42 +196,11 @@ export function CategoryDetail() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {instances?.map((instance) => (
-              <Link
+              <DraggableInstanceCard
                 key={instance.id}
-                href={`/instances/${instance.id}`}
-                onMouseEnter={() => setHoveredInstanceId(instance.id)}
-                onMouseLeave={() => setHoveredInstanceId(null)}
-              >
-                <Card
-                  className="transition-colors cursor-pointer hover-elevate h-full flex flex-col justify-between"
-                  style={{
-                    borderColor: hoveredInstanceId === instance.id
-                      ? `${category?.color}80`
-                      : undefined,
-                  }}
-                >
-                  <CardHeader>
-                    <CardTitle
-                      className="font-serif text-xl transition-colors"
-                      style={{
-                        color: hoveredInstanceId === instance.id
-                          ? category?.color
-                          : undefined,
-                      }}
-                    >
-                      {instance.name}
-                    </CardTitle>
-                    {instance.description && (
-                      <CardDescription className="mt-2 line-clamp-2">
-                        {instance.description}
-                      </CardDescription>
-                    )}
-                    <div className="text-xs font-medium text-muted-foreground mt-4 uppercase tracking-wider flex gap-4">
-                      <span>{instance.blockCount} {instance.blockCount === 1 ? 'block' : 'blocks'}</span>
-                    </div>
-                  </CardHeader>
-                </Card>
-              </Link>
+                instance={instance}
+                category={category}
+              />
             ))}
           </div>
         )}
