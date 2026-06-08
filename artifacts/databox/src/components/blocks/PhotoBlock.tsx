@@ -9,12 +9,12 @@ import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Upload, Loader2, X, ZoomIn, ZoomOut,
-  ChevronLeft, ChevronRight, CalendarDays, LayoutGrid, Tag, Trash2, RotateCw,
+  ChevronLeft, ChevronRight, CalendarDays, LayoutGrid, Trash2, RotateCw,
 } from "lucide-react";
 import { format, isToday, isPast, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 
-type ViewMode = "grid" | "calendar" | "categories";
+type ViewMode = "grid" | "calendar";
 
 function getPhotoDate(photo: Photo): string {
   return (photo as Photo & { displayDate?: string | null }).displayDate
@@ -166,66 +166,6 @@ function CalendarView({
   );
 }
 
-function CategoriesView({
-  photos,
-  onPhotoClick,
-}: {
-  photos: Photo[];
-  onPhotoClick: (idx: number) => void;
-}) {
-  const grouped = useMemo(() => {
-    const map = new Map<string, Photo[]>();
-    for (const photo of photos) {
-      const cat = (photo as Photo & { photoCategory?: string | null }).photoCategory ?? "";
-      map.set(cat, [...(map.get(cat) ?? []), photo]);
-    }
-    const named: Array<{ label: string; items: Photo[] }> = [];
-    const uncategorized: Photo[] = [];
-    for (const [cat, items] of map.entries()) {
-      if (cat) named.push({ label: cat, items });
-      else uncategorized.push(...items);
-    }
-    named.sort((a, b) => a.label.localeCompare(b.label));
-    if (uncategorized.length > 0) named.push({ label: "Uncategorized", items: uncategorized });
-    return named;
-  }, [photos]);
-
-  if (photos.length === 0) {
-    return <p className="text-center text-sm text-muted-foreground py-4">No photos yet</p>;
-  }
-  if (grouped.length === 1 && grouped[0].label === "Uncategorized") {
-    return (
-      <div className="space-y-2">
-        <p className="text-xs text-muted-foreground">Assign categories to photos in the lightbox to group them here.</p>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {photos.map((photo, idx) => (
-            <PhotoThumbnail key={photo.id} photo={photo} onClick={() => onPhotoClick(idx)} />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-5">
-      {grouped.map(({ label, items }) => (
-        <div key={label}>
-          <div className="flex items-center gap-2 mb-2">
-            <Tag className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-sm font-medium">{label}</span>
-            <span className="text-xs text-muted-foreground">({items.length})</span>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {items.map(photo => {
-              const idx = photos.indexOf(photo);
-              return <PhotoThumbnail key={photo.id} photo={photo} onClick={() => onPhotoClick(idx)} />;
-            })}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function PhotoLightbox({
   photos,
@@ -511,7 +451,6 @@ export function PhotoBlock({ block }: { block: Block }) {
   const views: Array<{ id: ViewMode; icon: typeof LayoutGrid; label: string }> = [
     { id: "grid", icon: LayoutGrid, label: "Grid" },
     { id: "calendar", icon: CalendarDays, label: "Calendar" },
-    { id: "categories", icon: Tag, label: "Categories" },
   ];
 
   return (
@@ -566,9 +505,6 @@ export function PhotoBlock({ block }: { block: Block }) {
       )}
       {view === "calendar" && (
         <CalendarView photos={photos} onPhotoClick={setLightboxIdx} />
-      )}
-      {view === "categories" && (
-        <CategoriesView photos={photos} onPhotoClick={setLightboxIdx} />
       )}
 
       <input
