@@ -366,7 +366,7 @@ function PhotoLightbox({
         className={cn(
           "flex-1 relative min-h-0",
           zoomed
-            ? "overflow-auto flex items-start justify-start"
+            ? "overflow-auto flex items-start justify-center"
             : "flex items-center justify-center"
         )}
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
