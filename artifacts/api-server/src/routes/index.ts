@@ -11,6 +11,7 @@ import pdfsRouter from "./pdfs";
 import analysisRouter from "./analysis";
 import mapRouter from "./map";
 import searchRouter from "./search";
+import upcomingEventsRouter from "./upcoming_events";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(pdfsRouter);
 router.use(analysisRouter);
 router.use(mapRouter);
 router.use(searchRouter);
+router.use(upcomingEventsRouter);
 
 export default router;

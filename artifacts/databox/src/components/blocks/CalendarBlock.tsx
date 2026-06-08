@@ -63,6 +63,7 @@ export function CalendarBlock({ block }: { block: Block }) {
             return (
               <div
                 key={event.id}
+                id={`event-${event.id}`}
                 className={cn(
                   "flex items-start gap-4 p-4 rounded-lg border group transition-all",
                   isEventToday ? "bg-primary/5 border-primary/20 shadow-sm" : "bg-card hover:border-primary/30",

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useGetInstance, useGetCategory, useListBlocks, useDeleteInstance, useReorderBlocks, getGetInstanceQueryKey, getListBlocksQueryKey, getListInstancesQueryKey } from "@workspace/api-client-react";
+import { useGetInstance, useGetCategory, useListBlocks, useDeleteInstance, useReorderBlocks, getGetInstanceQueryKey, getGetCategoryQueryKey, getListBlocksQueryKey, getListInstancesQueryKey } from "@workspace/api-client-react";
 import type { Block } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,7 @@ export function InstanceDetail() {
   });
 
   const { data: category } = useGetCategory(instance?.categoryId ?? 0, {
-    query: { enabled: !!instance?.categoryId }
+    query: { enabled: !!instance?.categoryId, queryKey: getGetCategoryQueryKey(instance?.categoryId ?? 0) }
   });
 
   const { data: blocks, isLoading: isBlocksLoading } = useListBlocks(id, {
@@ -57,15 +57,23 @@ export function InstanceDetail() {
     }
   }, [blocks]);
 
+  // Scroll to a specific event when arriving via a hash link (e.g. #event-42).
+  // Retries with an interval because CalendarBlock fetches its events after blocks load.
   useEffect(() => {
-    if (!blocks || blocks.length === 0) return;
     const hash = window.location.hash;
     if (!hash) return;
-    const el = document.querySelector(hash);
-    if (el) {
-      setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
-    }
-  }, [blocks]);
+    let attempts = 0;
+    const interval = setInterval(() => {
+      const el = document.querySelector(hash);
+      if (el) {
+        clearInterval(interval);
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else if (++attempts > 30) {
+        clearInterval(interval);
+      }
+    }, 150);
+    return () => clearInterval(interval);
+  }, []);
 
   const deleteInstance = useDeleteInstance();
   const reorderBlocks = useReorderBlocks();
