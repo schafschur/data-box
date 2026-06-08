@@ -16,7 +16,7 @@ import {
   MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { CheckSquare, FileText, Calendar, Save, RotateCcw, Users, List } from "lucide-react";
+import { CheckSquare, FileText, Calendar, Save, RotateCcw, Users, List, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
@@ -51,6 +51,13 @@ interface ContactCard {
   color: string;
   sortOrder: number;
 }
+interface Photo {
+  id: number;
+  blockId: number;
+  caption: string | null;
+  notes: string | null;
+  sortOrder: number;
+}
 interface ListItem {
   id: number;
   blockId: number;
@@ -62,6 +69,7 @@ interface MapData {
   blocks: BlockData[];
   todoItems: TodoItem[];
   calendarEvents: CalendarEvent[];
+  photos: Photo[];
   contactCards: ContactCard[];
   listItems: ListItem[];
 }
@@ -130,6 +138,7 @@ function NodeCard({
 const RICHTEXT_ACCENT  = "hsl(176 43% 52%)";
 const TODO_ACCENT      = "hsl(16 75% 61%)";
 const CALENDAR_ACCENT  = "hsl(346 58% 57%)";
+const PHOTO_ACCENT     = "hsl(35 85% 55%)";
 const CONTACT_ACCENT   = "hsl(330 55% 56%)";
 const LIST_ACCENT      = "hsl(174 55% 42%)";
 
@@ -199,6 +208,36 @@ function CalendarEventNode({ data }: { data: { title: string; date: string } }) 
   );
 }
 
+function PhotoBlockNode({ data }: { data: { title: string; count: number; importance?: number | null } }) {
+  return (
+    <NodeCard icon={<ImageIcon className="w-3.5 h-3.5" />} title={data.title} accent={PHOTO_ACCENT} bg={importanceBgColor(data.importance)}>
+      <span>{data.count} photo{data.count !== 1 ? "s" : ""}</span>
+    </NodeCard>
+  );
+}
+
+function PhotoItemNode({ data }: { data: { index: number; caption: string | null; notes: string | null } }) {
+  const label = data.caption || `Photo ${data.index + 1}`;
+  return (
+    <>
+      <Handle id="top"  type="target" position={Position.Top}  style={handleStyle(PHOTO_ACCENT)} />
+      <Handle id="left" type="target" position={Position.Left} style={handleStyle(PHOTO_ACCENT)} />
+      <div className="rounded-lg shadow-md bg-card border border-card-border px-3 py-2 text-xs max-w-[220px]"
+        style={{ borderLeftColor: PHOTO_ACCENT, borderLeftWidth: 3 }}>
+        <div className="flex items-center gap-1.5">
+          <ImageIcon className="w-3 h-3 shrink-0" style={{ color: PHOTO_ACCENT }} />
+          <span className="font-medium truncate">{label}</span>
+        </div>
+        {data.notes && (
+          <div className="text-muted-foreground truncate mt-0.5">{data.notes}</div>
+        )}
+      </div>
+      <Handle id="bottom" type="source" position={Position.Bottom} style={handleStyle(PHOTO_ACCENT)} />
+      <Handle id="right"  type="source" position={Position.Right}  style={handleStyle(PHOTO_ACCENT)} />
+    </>
+  );
+}
+
 function ContactBlockNode({ data }: { data: { title: string; count: number; importance?: number | null } }) {
   return (
     <NodeCard icon={<Users className="w-3.5 h-3.5" />} title={data.title} accent={CONTACT_ACCENT} bg={importanceBgColor(data.importance)}>
@@ -256,6 +295,8 @@ const nodeTypes = {
   todoItem:      TodoItemNode,
   calendarBlock: CalendarBlockNode,
   calendarEvent: CalendarEventNode,
+  photoBlock:    PhotoBlockNode,
+  photoItem:     PhotoItemNode,
   contactBlock:  ContactBlockNode,
   contactCard:   ContactCardNode,
   listBlock:     ListBlockNode,
@@ -345,6 +386,37 @@ function buildInitialLayout(
           sourceHandle: "bottom",
           targetHandle: "top",
           style: { stroke: CALENDAR_ACCENT, strokeWidth: 1.5, strokeDasharray: "4 3" },
+          animated: false,
+        });
+      });
+      col++;
+
+    } else if (block.type === "photo") {
+      const photos = (mapData.photos ?? [])
+        .filter((p) => p.blockId === block.id)
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+      nodes.push({
+        id: blockNodeId,
+        type: "photoBlock",
+        position: { x: baseX, y: baseY },
+        data: { title: block.title ?? "Photos", count: photos.length, importance: block.importance },
+      });
+      photos.forEach((photo, idx) => {
+        const photoId = `photo-${photo.id}`;
+        const photoPos = savedPositions[photoId];
+        nodes.push({
+          id: photoId,
+          type: "photoItem",
+          position: { x: photoPos?.x ?? baseX + 20, y: photoPos?.y ?? baseY + 80 + idx * 52 },
+          data: { index: idx, caption: photo.caption ?? null, notes: photo.notes ?? null },
+        });
+        edges.push({
+          id: `e-${blockNodeId}-${photoId}`,
+          source: blockNodeId,
+          target: photoId,
+          sourceHandle: "bottom",
+          targetHandle: "top",
+          style: { stroke: PHOTO_ACCENT, strokeWidth: 1.5, strokeDasharray: "4 3" },
           animated: false,
         });
       });
@@ -553,6 +625,7 @@ export function MapView({ instanceId }: MapViewProps) {
           if (n.type === "richtext")                               return RICHTEXT_ACCENT;
           if (n.type === "todoBlock"     || n.type === "todoItem") return TODO_ACCENT;
           if (n.type === "calendarBlock" || n.type === "calendarEvent") return CALENDAR_ACCENT;
+          if (n.type === "photoBlock"    || n.type === "photoItem")     return PHOTO_ACCENT;
           if (n.type === "contactBlock"  || n.type === "contactCard")   return CONTACT_ACCENT;
           if (n.type === "listBlock"     || n.type === "listItem")      return LIST_ACCENT;
           return "hsl(215 20% 65%)";

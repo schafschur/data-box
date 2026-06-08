@@ -6,6 +6,7 @@ import {
   blocksTable,
   todoItemsTable,
   calendarEventsTable,
+  photosTable,
   contactCardsTable,
   listItemsTable,
 } from "@workspace/db";
@@ -28,15 +29,25 @@ router.get("/instances/:id/map-data", async (req: Request, res: Response) => {
 
   const todoBlockIds     = blocks.filter((b) => b.type === "todo").map((b) => b.id);
   const calendarBlockIds = blocks.filter((b) => b.type === "calendar").map((b) => b.id);
+  const photoBlockIds    = blocks.filter((b) => b.type === "photo").map((b) => b.id);
   const contactBlockIds  = blocks.filter((b) => b.type === "contact").map((b) => b.id);
   const listBlockIds     = blocks.filter((b) => b.type === "list").map((b) => b.id);
 
-  const [todoItems, calendarEvents, contactCards, listItems] = await Promise.all([
+  const [todoItems, calendarEvents, photos, contactCards, listItems] = await Promise.all([
     todoBlockIds.length
       ? db.select().from(todoItemsTable).where(inArray(todoItemsTable.blockId, todoBlockIds))
       : Promise.resolve([]),
     calendarBlockIds.length
       ? db.select().from(calendarEventsTable).where(inArray(calendarEventsTable.blockId, calendarBlockIds))
+      : Promise.resolve([]),
+    photoBlockIds.length
+      ? db.select({
+          id:        photosTable.id,
+          blockId:   photosTable.blockId,
+          caption:   photosTable.caption,
+          notes:     photosTable.notes,
+          sortOrder: photosTable.sortOrder,
+        }).from(photosTable).where(inArray(photosTable.blockId, photoBlockIds))
       : Promise.resolve([]),
     contactBlockIds.length
       ? db.select({
@@ -61,7 +72,7 @@ router.get("/instances/:id/map-data", async (req: Request, res: Response) => {
       : Promise.resolve([]),
   ]);
 
-  res.json({ blocks, todoItems, calendarEvents, contactCards, listItems });
+  res.json({ blocks, todoItems, calendarEvents, photos, contactCards, listItems });
 });
 
 router.get("/instances/:id/map-layout", async (req: Request, res: Response) => {
