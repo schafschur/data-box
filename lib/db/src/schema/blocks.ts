@@ -3,7 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { instancesTable } from "./instances";
 
-export const BLOCK_TYPES = ["richtext", "todo", "calendar", "photo"] as const;
+export const BLOCK_TYPES = ["richtext", "todo", "calendar", "photo", "pdf"] as const;
 export type BlockType = typeof BLOCK_TYPES[number];
 
 export const blocksTable = pgTable("blocks", {

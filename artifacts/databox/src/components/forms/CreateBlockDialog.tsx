@@ -27,7 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const schema = z.object({
   title: z.string().optional(),
-  type: z.enum(["richtext", "todo", "calendar", "photo"]),
+  type: z.enum(["richtext", "todo", "calendar", "photo", "pdf"]),
 }).superRefine((data, ctx) => {
   if (data.type === "photo" && !data.title?.trim()) {
     ctx.addIssue({
@@ -53,6 +53,7 @@ export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
 
   const selectedType = useWatch({ control: form.control, name: "type" });
   const isPhoto = selectedType === "photo";
+  const isPdf = selectedType === "pdf";
 
   const onSubmit = (data: z.infer<typeof schema>) => {
     createBlock.mutate(
@@ -81,6 +82,8 @@ export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
           <DialogDescription>
             {isPhoto
               ? "Each photo block is a category. Photos you upload will be tagged with this category automatically."
+              : isPdf
+              ? "Upload and manage PDF files in this block."
               : "Add a new section to your instance."}
           </DialogDescription>
         </DialogHeader>
@@ -110,6 +113,7 @@ export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
                       <SelectItem value="todo">Todo List</SelectItem>
                       <SelectItem value="calendar">Calendar</SelectItem>
                       <SelectItem value="photo">Photos</SelectItem>
+                      <SelectItem value="pdf">PDF Files</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -127,7 +131,7 @@ export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
                   </FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={isPhoto ? "e.g. Vacation, Work, Family…" : "Block title"}
+                      placeholder={isPhoto ? "e.g. Vacation, Work, Family…" : isPdf ? "e.g. Contracts, Reports…" : "Block title"}
                       {...field}
                     />
                   </FormControl>
@@ -137,7 +141,7 @@ export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
             />
             <div className="flex justify-end pt-4">
               <Button type="submit" disabled={createBlock.isPending}>
-                {isPhoto ? "Create Photo Block" : "Create Block"}
+                {isPhoto ? "Create Photo Block" : isPdf ? "Create PDF Block" : "Create Block"}
               </Button>
             </div>
           </form>

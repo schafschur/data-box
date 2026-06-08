@@ -17,4 +17,5 @@ export const SearchResultBlockType = {
   todo: 'todo',
   calendar: 'calendar',
   photo: 'photo',
+  pdf: 'pdf',
 } as const;

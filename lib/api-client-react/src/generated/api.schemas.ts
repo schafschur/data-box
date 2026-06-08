@@ -24,6 +24,7 @@ export const SearchResultBlockType = {
   todo: 'todo',
   calendar: 'calendar',
   photo: 'photo',
+  pdf: 'pdf',
 } as const;
 
 export interface SearchResult {
@@ -94,6 +95,7 @@ export const BlockType = {
   todo: 'todo',
   calendar: 'calendar',
   photo: 'photo',
+  pdf: 'pdf',
 } as const;
 
 /**
@@ -133,6 +135,7 @@ export const BlockInputType = {
   todo: 'todo',
   calendar: 'calendar',
   photo: 'photo',
+  pdf: 'pdf',
 } as const;
 
 export interface BlockInput {

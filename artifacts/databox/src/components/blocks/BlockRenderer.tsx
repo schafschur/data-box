@@ -1,22 +1,24 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ComponentType } from "react";
 import { Block, useDeleteBlock, useUpdateBlock, getListBlocksQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { Trash2, GripVertical, FileText, CheckSquare, Calendar, Image as ImageIcon, Check, Flame } from "lucide-react";
+import { Trash2, GripVertical, FileText, CheckSquare, Calendar, Image as ImageIcon, Check, Flame, BookOpen } from "lucide-react";
 import { RichTextBlock } from "./RichTextBlock";
 import { TodoBlock } from "./TodoBlock";
 import { CalendarBlock } from "./CalendarBlock";
 import { PhotoBlock } from "./PhotoBlock";
+import { PdfBlock } from "./PdfBlock";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
 import type { DraggableAttributes } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 
-const ICONS = {
+const ICONS: Record<string, ComponentType<{ className?: string }>> = {
   richtext: FileText,
   todo: CheckSquare,
   calendar: Calendar,
   photo: ImageIcon,
+  pdf: BookOpen,
 };
 
 function importanceBadgeClass(imp: number): string {
@@ -163,7 +165,7 @@ export function BlockRenderer({ block, dragHandleRef, dragHandleAttributes, drag
                 className="text-2xl font-serif font-medium cursor-text hover:text-primary transition-colors truncate"
                 onClick={() => setIsEditingTitle(true)}
               >
-                {block.title || <span className="text-muted-foreground italic text-lg">Untitled {block.type}</span>}
+                {block.title || <span className="text-muted-foreground italic text-lg">Untitled {block.type === "pdf" ? "PDF" : block.type}</span>}
               </h3>
             )}
           </div>
@@ -233,6 +235,7 @@ export function BlockRenderer({ block, dragHandleRef, dragHandleAttributes, drag
           {block.type === "todo" && <TodoBlock block={block} />}
           {block.type === "calendar" && <CalendarBlock block={block} />}
           {block.type === "photo" && <PhotoBlock block={block} />}
+          {block.type === "pdf" && <PdfBlock block={block} />}
         </div>
       </div>
     </div>

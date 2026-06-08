@@ -22,7 +22,7 @@ export const SearchResponseItem = zod.object({
   "instanceName": zod.string(),
   "blockId": zod.number().nullable(),
   "blockTitle": zod.string().nullable(),
-  "blockType": zod.union([zod.literal('richtext'),zod.literal('todo'),zod.literal('calendar'),zod.literal('photo'),zod.literal(null)]).nullable(),
+  "blockType": zod.union([zod.literal('richtext'),zod.literal('todo'),zod.literal('calendar'),zod.literal('photo'),zod.literal('pdf'),zod.literal(null)]).nullable(),
   "snippet": zod.string().nullable()
 })
 export const SearchResponse = zod.array(SearchResponseItem)
@@ -202,7 +202,7 @@ export const ListBlocksParams = zod.object({
 export const ListBlocksResponseItem = zod.object({
   "id": zod.number(),
   "instanceId": zod.number(),
-  "type": zod.enum(['richtext', 'todo', 'calendar', 'photo']),
+  "type": zod.enum(['richtext', 'todo', 'calendar', 'photo', 'pdf']),
   "title": zod.string().nullish(),
   "position": zod.number(),
   "content": zod.object({
@@ -222,7 +222,7 @@ export const CreateBlockParams = zod.object({
 })
 
 export const CreateBlockBody = zod.object({
-  "type": zod.enum(['richtext', 'todo', 'calendar', 'photo']),
+  "type": zod.enum(['richtext', 'todo', 'calendar', 'photo', 'pdf']),
   "title": zod.string().nullish(),
   "importance": zod.number().int().min(1).max(10).nullish()
 })
@@ -242,7 +242,7 @@ export const ReorderBlocksBody = zod.object({
 export const ReorderBlocksResponseItem = zod.object({
   "id": zod.number(),
   "instanceId": zod.number(),
-  "type": zod.enum(['richtext', 'todo', 'calendar', 'photo']),
+  "type": zod.enum(['richtext', 'todo', 'calendar', 'photo', 'pdf']),
   "title": zod.string().nullish(),
   "position": zod.number(),
   "content": zod.object({
@@ -264,7 +264,7 @@ export const GetBlockParams = zod.object({
 export const GetBlockResponse = zod.object({
   "id": zod.number(),
   "instanceId": zod.number(),
-  "type": zod.enum(['richtext', 'todo', 'calendar', 'photo']),
+  "type": zod.enum(['richtext', 'todo', 'calendar', 'photo', 'pdf']),
   "title": zod.string().nullish(),
   "position": zod.number(),
   "content": zod.object({
@@ -293,7 +293,7 @@ export const UpdateBlockBody = zod.object({
 export const UpdateBlockResponse = zod.object({
   "id": zod.number(),
   "instanceId": zod.number(),
-  "type": zod.enum(['richtext', 'todo', 'calendar', 'photo']),
+  "type": zod.enum(['richtext', 'todo', 'calendar', 'photo', 'pdf']),
   "title": zod.string().nullish(),
   "position": zod.number(),
   "content": zod.object({

@@ -14,4 +14,5 @@ export const BlockType = {
   todo: 'todo',
   calendar: 'calendar',
   photo: 'photo',
+  pdf: 'pdf',
 } as const;
