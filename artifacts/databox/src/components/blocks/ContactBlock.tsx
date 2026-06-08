@@ -41,15 +41,12 @@ function randomColor(): string {
   return AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
 }
 
-function luminance(hex: string): number {
+function textOnColor(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
   const g = parseInt(hex.slice(3, 5), 16) / 255;
   const b = parseInt(hex.slice(5, 7), 16) / 255;
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-function textOnColor(hex: string): string {
-  return luminance(hex) > 0.35 ? "#1a1a1a" : "#ffffff";
+  const l = (Math.max(r, g, b) + Math.min(r, g, b)) / 2;
+  return l < 0.85 ? "#ffffff" : "#1a1a1a";
 }
 
 function getInitials(first: string, last: string): string {
@@ -88,7 +85,7 @@ interface CardViewProps {
 
 function ContactCardView({ card, onEdit, onDelete, dragAttributes, dragListeners }: CardViewProps) {
   return (
-    <div className="group relative bg-card border border-border rounded-xl flex flex-col items-center gap-3 p-5 hover:shadow-md hover:border-primary/20 transition-all h-full">
+    <div className="group relative border border-border rounded-xl flex flex-col items-center gap-3 p-5 hover:shadow-md hover:border-primary/20 transition-all h-full" style={{ backgroundColor: "var(--background)" }}>
       <button
         className="absolute top-2 left-2 opacity-0 group-hover:opacity-30 hover:!opacity-60 cursor-grab active:cursor-grabbing touch-none p-0.5 rounded"
         {...(dragAttributes as object)}
