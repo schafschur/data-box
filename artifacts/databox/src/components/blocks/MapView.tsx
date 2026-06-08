@@ -16,7 +16,7 @@ import {
   MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { CheckSquare, FileText, Calendar, Save, RotateCcw } from "lucide-react";
+import { CheckSquare, FileText, Calendar, Save, RotateCcw, Users, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
@@ -26,15 +26,6 @@ interface BlockData {
   title: string | null;
   content: unknown;
   importance?: number | null;
-}
-
-function importanceBgColor(imp: number | null | undefined): string | undefined {
-  if (!imp) return undefined;
-  if (imp <= 2) return "#f8fafc";
-  if (imp <= 4) return "#eff6ff";
-  if (imp <= 6) return "#f0fdfa";
-  if (imp <= 8) return "#fffbeb";
-  return "#fff7ed";
 }
 interface TodoItem {
   id: number;
@@ -50,14 +41,42 @@ interface CalendarEvent {
   date: string;
   description: string | null;
 }
+interface ContactCard {
+  id: number;
+  blockId: number;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string | null;
+  color: string;
+  sortOrder: number;
+}
+interface ListItem {
+  id: number;
+  blockId: number;
+  title: string;
+  description: string | null;
+  sortOrder: number;
+}
 interface MapData {
   blocks: BlockData[];
   todoItems: TodoItem[];
   calendarEvents: CalendarEvent[];
+  contactCards: ContactCard[];
+  listItems: ListItem[];
 }
 interface MapLayout {
   nodePositions: Record<string, { x: number; y: number }>;
   customEdges: Array<{ id: string; source: string; target: string }>;
+}
+
+function importanceBgColor(imp: number | null | undefined): string | undefined {
+  if (!imp) return undefined;
+  if (imp <= 2) return "#f8fafc";
+  if (imp <= 4) return "#eff6ff";
+  if (imp <= 6) return "#f0fdfa";
+  if (imp <= 8) return "#fffbeb";
+  return "#fff7ed";
 }
 
 /* ─── Handle style helper ────────────────────────────────────────────── */
@@ -75,11 +94,7 @@ function handleStyle(accent: string): React.CSSProperties {
 
 /* ─── Custom node card ───────────────────────────────────────────────── */
 function NodeCard({
-  icon,
-  title,
-  children,
-  accent,
-  bg,
+  icon, title, children, accent, bg,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -89,8 +104,8 @@ function NodeCard({
 }) {
   return (
     <>
-      <Handle id="top"    type="target" position={Position.Top}    style={handleStyle(accent)} />
-      <Handle id="left"   type="target" position={Position.Left}   style={handleStyle(accent)} />
+      <Handle id="top"  type="target" position={Position.Top}  style={handleStyle(accent)} />
+      <Handle id="left" type="target" position={Position.Left} style={handleStyle(accent)} />
       <div
         className="rounded-xl shadow-md border border-card-border text-card-foreground min-w-[180px] max-w-[260px] overflow-hidden"
         style={{ borderTopColor: accent, borderTopWidth: 3, backgroundColor: bg ?? "var(--card)" }}
@@ -112,83 +127,139 @@ function NodeCard({
 }
 
 /* ─── Node type renderers ────────────────────────────────────────────── */
+const RICHTEXT_ACCENT  = "hsl(176 43% 52%)";
+const TODO_ACCENT      = "hsl(16 75% 61%)";
+const CALENDAR_ACCENT  = "hsl(346 58% 57%)";
+const CONTACT_ACCENT   = "hsl(330 55% 56%)";
+const LIST_ACCENT      = "hsl(174 55% 42%)";
+
 function RichtextNode({ data }: { data: { title: string; preview: string; importance?: number | null } }) {
   return (
-    <NodeCard icon={<FileText className="w-3.5 h-3.5" />} title={data.title} accent="hsl(176 43% 52%)" bg={importanceBgColor(data.importance)}>
-      {data.preview && (
-        <p className="line-clamp-3 leading-relaxed">{data.preview}</p>
-      )}
+    <NodeCard icon={<FileText className="w-3.5 h-3.5" />} title={data.title} accent={RICHTEXT_ACCENT} bg={importanceBgColor(data.importance)}>
+      {data.preview && <p className="line-clamp-3 leading-relaxed">{data.preview}</p>}
     </NodeCard>
   );
 }
 
 function TodoBlockNode({ data }: { data: { title: string; count: number; done: number; importance?: number | null } }) {
   const pct = data.count > 0 ? Math.round((data.done / data.count) * 100) : 0;
-  const accent = "hsl(16 75% 61%)";
   return (
-    <NodeCard icon={<CheckSquare className="w-3.5 h-3.5" />} title={data.title} accent={accent} bg={importanceBgColor(data.importance)}>
+    <NodeCard icon={<CheckSquare className="w-3.5 h-3.5" />} title={data.title} accent={TODO_ACCENT} bg={importanceBgColor(data.importance)}>
       <div className="flex items-center justify-between mb-1">
         <span>{data.done}/{data.count} done</span>
         <span className="font-medium">{pct}%</span>
       </div>
       <div className="h-1.5 rounded-full bg-border overflow-hidden">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: accent }} />
+        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: TODO_ACCENT }} />
       </div>
     </NodeCard>
   );
 }
 
 function TodoItemNode({ data }: { data: { text: string; completed: boolean } }) {
-  const accent = "hsl(16 75% 61%)";
   return (
     <>
-      <Handle id="top"    type="target" position={Position.Top}    style={handleStyle(accent)} />
-      <Handle id="left"   type="target" position={Position.Left}   style={handleStyle(accent)} />
+      <Handle id="top"  type="target" position={Position.Top}  style={handleStyle(TODO_ACCENT)} />
+      <Handle id="left" type="target" position={Position.Left} style={handleStyle(TODO_ACCENT)} />
       <div className="rounded-lg shadow-md bg-card border border-card-border px-3 py-2 flex items-center gap-2 text-xs max-w-[220px]"
-        style={{ borderLeftColor: accent, borderLeftWidth: 3 }}>
-        <span className={`w-3.5 h-3.5 rounded border flex-shrink-0 flex items-center justify-center ${data.completed ? "border-[hsl(16_75%_61%)]" : "border-border"}`}
-          style={data.completed ? { background: accent } : {}}>
+        style={{ borderLeftColor: TODO_ACCENT, borderLeftWidth: 3 }}>
+        <span className="w-3.5 h-3.5 rounded border flex-shrink-0 flex items-center justify-center"
+          style={data.completed ? { background: TODO_ACCENT, borderColor: TODO_ACCENT } : { borderColor: "var(--border)" }}>
           {data.completed && <span className="text-white text-[8px]">✓</span>}
         </span>
         <span className={`truncate ${data.completed ? "line-through text-muted-foreground" : ""}`}>{data.text}</span>
       </div>
-      <Handle id="bottom" type="source" position={Position.Bottom} style={handleStyle(accent)} />
-      <Handle id="right"  type="source" position={Position.Right}  style={handleStyle(accent)} />
+      <Handle id="bottom" type="source" position={Position.Bottom} style={handleStyle(TODO_ACCENT)} />
+      <Handle id="right"  type="source" position={Position.Right}  style={handleStyle(TODO_ACCENT)} />
     </>
   );
 }
 
 function CalendarBlockNode({ data }: { data: { title: string; count: number; importance?: number | null } }) {
   return (
-    <NodeCard icon={<Calendar className="w-3.5 h-3.5" />} title={data.title} accent="hsl(346 58% 57%)" bg={importanceBgColor(data.importance)}>
+    <NodeCard icon={<Calendar className="w-3.5 h-3.5" />} title={data.title} accent={CALENDAR_ACCENT} bg={importanceBgColor(data.importance)}>
       <span>{data.count} event{data.count !== 1 ? "s" : ""}</span>
     </NodeCard>
   );
 }
 
 function CalendarEventNode({ data }: { data: { title: string; date: string } }) {
-  const accent = "hsl(346 58% 57%)";
   return (
     <>
-      <Handle id="top"    type="target" position={Position.Top}    style={handleStyle(accent)} />
-      <Handle id="left"   type="target" position={Position.Left}   style={handleStyle(accent)} />
+      <Handle id="top"  type="target" position={Position.Top}  style={handleStyle(CALENDAR_ACCENT)} />
+      <Handle id="left" type="target" position={Position.Left} style={handleStyle(CALENDAR_ACCENT)} />
       <div className="rounded-lg shadow-md bg-card border border-card-border px-3 py-2 text-xs max-w-[220px]"
-        style={{ borderLeftColor: accent, borderLeftWidth: 3 }}>
+        style={{ borderLeftColor: CALENDAR_ACCENT, borderLeftWidth: 3 }}>
         <div className="font-medium truncate">{data.title}</div>
         <div className="text-muted-foreground">{data.date}</div>
       </div>
-      <Handle id="bottom" type="source" position={Position.Bottom} style={handleStyle(accent)} />
-      <Handle id="right"  type="source" position={Position.Right}  style={handleStyle(accent)} />
+      <Handle id="bottom" type="source" position={Position.Bottom} style={handleStyle(CALENDAR_ACCENT)} />
+      <Handle id="right"  type="source" position={Position.Right}  style={handleStyle(CALENDAR_ACCENT)} />
+    </>
+  );
+}
+
+function ContactBlockNode({ data }: { data: { title: string; count: number; importance?: number | null } }) {
+  return (
+    <NodeCard icon={<Users className="w-3.5 h-3.5" />} title={data.title} accent={CONTACT_ACCENT} bg={importanceBgColor(data.importance)}>
+      <span>{data.count} contact{data.count !== 1 ? "s" : ""}</span>
+    </NodeCard>
+  );
+}
+
+function ContactCardNode({ data }: { data: { name: string; email: string | null; phone: string | null; color: string } }) {
+  return (
+    <>
+      <Handle id="top"  type="target" position={Position.Top}  style={handleStyle(CONTACT_ACCENT)} />
+      <Handle id="left" type="target" position={Position.Left} style={handleStyle(CONTACT_ACCENT)} />
+      <div className="rounded-lg shadow-md bg-card border border-card-border px-3 py-2 text-xs max-w-[220px]"
+        style={{ borderLeftColor: data.color || CONTACT_ACCENT, borderLeftWidth: 3 }}>
+        <div className="font-medium truncate">{data.name}</div>
+        {data.email && <div className="text-muted-foreground truncate">{data.email}</div>}
+        {!data.email && data.phone && <div className="text-muted-foreground truncate">{data.phone}</div>}
+      </div>
+      <Handle id="bottom" type="source" position={Position.Bottom} style={handleStyle(CONTACT_ACCENT)} />
+      <Handle id="right"  type="source" position={Position.Right}  style={handleStyle(CONTACT_ACCENT)} />
+    </>
+  );
+}
+
+function ListBlockNode({ data }: { data: { title: string; count: number; importance?: number | null } }) {
+  return (
+    <NodeCard icon={<List className="w-3.5 h-3.5" />} title={data.title} accent={LIST_ACCENT} bg={importanceBgColor(data.importance)}>
+      <span>{data.count} item{data.count !== 1 ? "s" : ""}</span>
+    </NodeCard>
+  );
+}
+
+function ListItemNode({ data }: { data: { title: string; description: string | null } }) {
+  return (
+    <>
+      <Handle id="top"  type="target" position={Position.Top}  style={handleStyle(LIST_ACCENT)} />
+      <Handle id="left" type="target" position={Position.Left} style={handleStyle(LIST_ACCENT)} />
+      <div className="rounded-lg shadow-md bg-card border border-card-border px-3 py-2 text-xs max-w-[220px]"
+        style={{ borderLeftColor: LIST_ACCENT, borderLeftWidth: 3 }}>
+        <div className="font-medium truncate">{data.title}</div>
+        {data.description && (
+          <div className="text-muted-foreground truncate mt-0.5">{data.description}</div>
+        )}
+      </div>
+      <Handle id="bottom" type="source" position={Position.Bottom} style={handleStyle(LIST_ACCENT)} />
+      <Handle id="right"  type="source" position={Position.Right}  style={handleStyle(LIST_ACCENT)} />
     </>
   );
 }
 
 const nodeTypes = {
-  richtext: RichtextNode,
-  todoBlock: TodoBlockNode,
-  todoItem: TodoItemNode,
+  richtext:      RichtextNode,
+  todoBlock:     TodoBlockNode,
+  todoItem:      TodoItemNode,
   calendarBlock: CalendarBlockNode,
   calendarEvent: CalendarEventNode,
+  contactBlock:  ContactBlockNode,
+  contactCard:   ContactCardNode,
+  listBlock:     ListBlockNode,
+  listItem:      ListItemNode,
 };
 
 /* ─── Layout helper ──────────────────────────────────────────────────── */
@@ -216,8 +287,11 @@ function buildInitialLayout(
         data: { title: block.title ?? "Note", preview, importance: block.importance },
       });
       col++;
+
     } else if (block.type === "todo") {
-      const items = mapData.todoItems.filter((t) => t.blockId === block.id).sort((a, b) => a.position - b.position);
+      const items = (mapData.todoItems ?? [])
+        .filter((t) => t.blockId === block.id)
+        .sort((a, b) => a.position - b.position);
       nodes.push({
         id: blockNodeId,
         type: "todoBlock",
@@ -239,13 +313,16 @@ function buildInitialLayout(
           target: itemId,
           sourceHandle: "bottom",
           targetHandle: "top",
-          style: { stroke: "hsl(16 75% 61%)", strokeWidth: 1.5, strokeDasharray: "4 3" },
+          style: { stroke: TODO_ACCENT, strokeWidth: 1.5, strokeDasharray: "4 3" },
           animated: false,
         });
       });
       col++;
+
     } else if (block.type === "calendar") {
-      const events = mapData.calendarEvents.filter((e) => e.blockId === block.id).sort((a, b) => a.date.localeCompare(b.date));
+      const events = (mapData.calendarEvents ?? [])
+        .filter((e) => e.blockId === block.id)
+        .sort((a, b) => a.date.localeCompare(b.date));
       nodes.push({
         id: blockNodeId,
         type: "calendarBlock",
@@ -267,7 +344,74 @@ function buildInitialLayout(
           target: evId,
           sourceHandle: "bottom",
           targetHandle: "top",
-          style: { stroke: "hsl(346 58% 57%)", strokeWidth: 1.5, strokeDasharray: "4 3" },
+          style: { stroke: CALENDAR_ACCENT, strokeWidth: 1.5, strokeDasharray: "4 3" },
+          animated: false,
+        });
+      });
+      col++;
+
+    } else if (block.type === "contact") {
+      const cards = (mapData.contactCards ?? [])
+        .filter((c) => c.blockId === block.id)
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+      nodes.push({
+        id: blockNodeId,
+        type: "contactBlock",
+        position: { x: baseX, y: baseY },
+        data: { title: block.title ?? "Contacts", count: cards.length, importance: block.importance },
+      });
+      cards.forEach((card, idx) => {
+        const cardId = `contact-${card.id}`;
+        const cardPos = savedPositions[cardId];
+        nodes.push({
+          id: cardId,
+          type: "contactCard",
+          position: { x: cardPos?.x ?? baseX + 20, y: cardPos?.y ?? baseY + 80 + idx * 52 },
+          data: {
+            name:  `${card.firstName} ${card.lastName}`.trim(),
+            email: card.email ?? null,
+            phone: card.phone ?? null,
+            color: card.color,
+          },
+        });
+        edges.push({
+          id: `e-${blockNodeId}-${cardId}`,
+          source: blockNodeId,
+          target: cardId,
+          sourceHandle: "bottom",
+          targetHandle: "top",
+          style: { stroke: card.color || CONTACT_ACCENT, strokeWidth: 1.5, strokeDasharray: "4 3" },
+          animated: false,
+        });
+      });
+      col++;
+
+    } else if (block.type === "list") {
+      const items = (mapData.listItems ?? [])
+        .filter((i) => i.blockId === block.id)
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+      nodes.push({
+        id: blockNodeId,
+        type: "listBlock",
+        position: { x: baseX, y: baseY },
+        data: { title: block.title ?? "List", count: items.length, importance: block.importance },
+      });
+      items.forEach((item, idx) => {
+        const itemId = `listitem-${item.id}`;
+        const itemPos = savedPositions[itemId];
+        nodes.push({
+          id: itemId,
+          type: "listItem",
+          position: { x: itemPos?.x ?? baseX + 20, y: itemPos?.y ?? baseY + 80 + idx * 52 },
+          data: { title: item.title, description: item.description ?? null },
+        });
+        edges.push({
+          id: `e-${blockNodeId}-${itemId}`,
+          source: blockNodeId,
+          target: itemId,
+          sourceHandle: "bottom",
+          targetHandle: "top",
+          style: { stroke: LIST_ACCENT, strokeWidth: 1.5, strokeDasharray: "4 3" },
           animated: false,
         });
       });
@@ -306,9 +450,9 @@ async function saveMapLayout(id: number, layout: MapLayout): Promise<void> {
 export function MapView({ instanceId }: MapViewProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [loading, setLoading]   = useState(true);
+  const [saving, setSaving]     = useState(false);
+  const [saved, setSaved]       = useState(false);
   const mapDataRef = useRef<MapData | null>(null);
   const autoEdgesRef = useRef<Set<string>>(new Set());
 
@@ -323,8 +467,8 @@ export function MapView({ instanceId }: MapViewProps) {
           id: e.id,
           source: e.source,
           target: e.target,
-          markerEnd: { type: MarkerType.ArrowClosed, color: "hsl(176 43% 52%)" },
-          style: { stroke: "hsl(176 43% 52%)", strokeWidth: 2 },
+          markerEnd: { type: MarkerType.ArrowClosed, color: RICHTEXT_ACCENT },
+          style: { stroke: RICHTEXT_ACCENT, strokeWidth: 2 },
         }));
         setNodes(initialNodes);
         setEdges([...autoEdges, ...customEdges]);
@@ -339,8 +483,8 @@ export function MapView({ instanceId }: MapViewProps) {
           {
             ...connection,
             id: `custom-${Date.now()}`,
-            markerEnd: { type: MarkerType.ArrowClosed, color: "hsl(176 43% 52%)" },
-            style: { stroke: "hsl(176 43% 52%)", strokeWidth: 2 },
+            markerEnd: { type: MarkerType.ArrowClosed, color: RICHTEXT_ACCENT },
+            style: { stroke: RICHTEXT_ACCENT, strokeWidth: 2 },
           },
           eds
         )
@@ -406,9 +550,12 @@ export function MapView({ instanceId }: MapViewProps) {
       <Controls showInteractive={false} />
       <MiniMap
         nodeColor={(n) => {
-          if (n.type === "richtext") return "hsl(176 43% 52%)";
-          if (n.type === "todoBlock" || n.type === "todoItem") return "hsl(16 75% 61%)";
-          return "hsl(346 58% 57%)";
+          if (n.type === "richtext")                               return RICHTEXT_ACCENT;
+          if (n.type === "todoBlock"     || n.type === "todoItem") return TODO_ACCENT;
+          if (n.type === "calendarBlock" || n.type === "calendarEvent") return CALENDAR_ACCENT;
+          if (n.type === "contactBlock"  || n.type === "contactCard")   return CONTACT_ACCENT;
+          if (n.type === "listBlock"     || n.type === "listItem")      return LIST_ACCENT;
+          return "hsl(215 20% 65%)";
         }}
         maskColor="hsl(26 55% 94% / 0.7)"
       />
