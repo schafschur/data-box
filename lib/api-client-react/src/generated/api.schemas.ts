@@ -109,6 +109,8 @@ export interface Block {
   /** @nullable */
   title?: string | null;
   position: number;
+  /** @nullable */
+  importance?: number | null;
   /**
      * Type-discriminated block content (e.g. {"html":"..."} for richtext blocks)
      * @nullable
@@ -137,6 +139,8 @@ export interface BlockInput {
   type: BlockInputType;
   /** @nullable */
   title?: string | null;
+  /** @nullable */
+  importance?: number | null;
 }
 
 /**

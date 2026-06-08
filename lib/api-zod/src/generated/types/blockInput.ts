@@ -11,4 +11,6 @@ export interface BlockInput {
   type: BlockInputType;
   /** @nullable */
   title?: string | null;
+  /** @nullable */
+  importance?: number | null;
 }

@@ -16,9 +16,19 @@ const BLOCK_TYPE_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   photo: "image",
 };
 
+function importanceBadgeColor(imp: number): { bg: string; text: string } {
+  if (imp <= 2) return { bg: "#F1F5F9", text: "#64748B" };
+  if (imp <= 4) return { bg: "#EFF6FF", text: "#3B82F6" };
+  if (imp <= 6) return { bg: "#F0FDF9", text: "#0D9488" };
+  if (imp <= 8) return { bg: "#FFFBEB", text: "#D97706" };
+  return { bg: "#FFF1EE", text: "#E87A50" };
+}
+
 export function BlockRenderer({ block }: { block: Block }) {
   const colors = useColors();
   const icon = BLOCK_TYPE_ICONS[block.type] ?? "box";
+  const imp = block.importance;
+  const badgeColors = imp ? importanceBadgeColor(imp) : null;
 
   return (
     <View
@@ -31,19 +41,26 @@ export function BlockRenderer({ block }: { block: Block }) {
         },
       ]}
     >
-      {block.title ? (
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Feather name={icon} size={14} color={colors.mutedForeground} />
-          <Text
-            style={[
-              styles.title,
-              { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
-            ]}
-          >
-            {block.title}
-          </Text>
-        </View>
-      ) : null}
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <Feather name={icon} size={14} color={colors.mutedForeground} />
+        <Text
+          style={[
+            styles.title,
+            { color: block.title ? colors.foreground : colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
+          ]}
+          numberOfLines={1}
+        >
+          {block.title || `Untitled ${block.type}`}
+        </Text>
+        {badgeColors && (
+          <View style={[styles.badge, { backgroundColor: badgeColors.bg }]}>
+            <Feather name="zap" size={9} color={badgeColors.text} />
+            <Text style={[styles.badgeText, { color: badgeColors.text, fontFamily: "Inter_700Bold" }]}>
+              {imp}
+            </Text>
+          </View>
+        )}
+      </View>
 
       <View style={styles.content}>
         {block.type === "richtext" && <RichTextBlock block={block} />}
@@ -71,6 +88,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     flex: 1,
+  },
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  badgeText: {
+    fontSize: 11,
   },
   content: {
     padding: 14,

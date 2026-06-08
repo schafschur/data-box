@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { eq, asc, and, inArray } from "drizzle-orm";
+import { eq, asc, desc, and, inArray } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { blocksTable } from "@workspace/db";
 import {
@@ -22,7 +22,7 @@ router.get("/instances/:instanceId/blocks", async (req: Request, res: Response) 
     .select()
     .from(blocksTable)
     .where(eq(blocksTable.instanceId, instanceId))
-    .orderBy(asc(blocksTable.position), asc(blocksTable.createdAt));
+    .orderBy(desc(blocksTable.importance), asc(blocksTable.position), asc(blocksTable.createdAt));
   res.json(rows);
 });
 

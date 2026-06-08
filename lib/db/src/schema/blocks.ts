@@ -12,6 +12,7 @@ export const blocksTable = pgTable("blocks", {
   type: text("type").notNull().$type<BlockType>(),
   title: text("title"),
   position: integer("position").notNull().default(0),
+  importance: integer("importance"),
   content: jsonb("content"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

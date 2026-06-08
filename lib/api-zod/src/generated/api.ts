@@ -223,7 +223,8 @@ export const CreateBlockParams = zod.object({
 
 export const CreateBlockBody = zod.object({
   "type": zod.enum(['richtext', 'todo', 'calendar', 'photo']),
-  "title": zod.string().nullish()
+  "title": zod.string().nullish(),
+  "importance": zod.number().int().min(1).max(10).nullish()
 })
 
 
@@ -283,6 +284,7 @@ export const UpdateBlockParams = zod.object({
 
 export const UpdateBlockBody = zod.object({
   "title": zod.string().nullish(),
+  "importance": zod.number().int().min(1).max(10).nullish(),
   "content": zod.object({
 
 }).passthrough().nullish().describe('Type-discriminated block content object')

@@ -55,10 +55,12 @@ function NewBlockModal({
 
   const [selectedType, setSelectedType] = useState<BlockType>("richtext");
   const [title, setTitle] = useState("");
+  const [importance, setImportance] = useState<number | null>(null);
 
   const reset = () => {
     setSelectedType("richtext");
     setTitle("");
+    setImportance(null);
   };
 
   const handleClose = () => {
@@ -69,7 +71,7 @@ function NewBlockModal({
   const handleSubmit = async () => {
     await createBlock({
       instanceId,
-      data: { type: selectedType, title: title.trim() || null },
+      data: { type: selectedType, title: title.trim() || null, importance },
     });
     await queryClient.invalidateQueries({ queryKey: getListBlocksQueryKey(instanceId) });
     reset();
@@ -146,6 +148,38 @@ function NewBlockModal({
                 </Pressable>
               );
             })}
+          </View>
+
+          <Text style={[styles.label, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            Importance (optional)
+          </Text>
+          <View style={styles.importanceRow}>
+            {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+              <Pressable
+                key={n}
+                onPress={() => setImportance(importance === n ? null : n)}
+                style={[
+                  styles.impBtn,
+                  {
+                    borderColor: importance === n ? colors.primary : colors.border,
+                    backgroundColor: importance === n ? colors.primary : colors.background,
+                    borderRadius: colors.radius,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.impBtnText,
+                    {
+                      color: importance === n ? "#fff" : colors.mutedForeground,
+                      fontFamily: importance === n ? "Inter_700Bold" : "Inter_400Regular",
+                    },
+                  ]}
+                >
+                  {n}
+                </Text>
+              </Pressable>
+            ))}
           </View>
 
           <Text style={[styles.label, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
@@ -361,6 +395,9 @@ const styles = StyleSheet.create({
   sheetTitle: { fontSize: 20, marginBottom: 8 },
   label: { fontSize: 13, marginBottom: 4, marginTop: 4 },
   typeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 4 },
+  importanceRow: { flexDirection: "row", gap: 6, marginBottom: 4 },
+  impBtn: { flex: 1, height: 32, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
+  impBtnText: { fontSize: 12 },
   typeCard: {
     width: "47%",
     borderWidth: 1.5,
