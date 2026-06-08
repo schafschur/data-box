@@ -1,21 +1,35 @@
-import { useListCategories } from "@workspace/api-client-react";
+import {
+  useListCategories,
+  useCreateCategory,
+  getListCategoriesQueryKey,
+} from "@workspace/api-client-react";
 import type { Category } from "@workspace/api-client-react";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import React from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
   Text,
+  TextInput,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { useColors } from "@/hooks/useColors";
+
+const COLOR_PALETTE = [
+  "#5BC8C0", "#FF6B6B", "#4ECDC4", "#45B7D1",
+  "#96CEB4", "#FFEAA7", "#DDA0DD", "#98D8C8",
+];
 
 function CategoryCard({ category, onPress }: { category: Category; onPress: () => void }) {
   const colors = useColors();
@@ -60,11 +74,170 @@ function CategoryCard({ category, onPress }: { category: Category; onPress: () =
   );
 }
 
+function NewCategoryModal({
+  visible,
+  onClose,
+  onCreated,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
+  const { mutateAsync: createCategory, isPending } = useCreateCategory();
+
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [selectedColor, setSelectedColor] = useState(COLOR_PALETTE[0]);
+
+  const reset = () => {
+    setName("");
+    setDescription("");
+    setSelectedColor(COLOR_PALETTE[0]);
+  };
+
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
+  const handleSubmit = async () => {
+    if (!name.trim()) return;
+    await createCategory({
+      data: { name: name.trim(), description: description.trim() || null, color: selectedColor },
+    });
+    await queryClient.invalidateQueries({ queryKey: getListCategoriesQueryKey() });
+    reset();
+    onCreated();
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+      <TouchableWithoutFeedback onPress={handleClose}>
+        <View style={styles.modalBackdrop} />
+      </TouchableWithoutFeedback>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.modalKAV}
+        pointerEvents="box-none"
+      >
+        <View
+          style={[
+            styles.sheet,
+            {
+              backgroundColor: colors.card,
+              paddingBottom: insets.bottom + 16,
+            },
+          ]}
+        >
+          <View style={styles.sheetHandle} />
+          <Text style={[styles.sheetTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+            New Category
+          </Text>
+
+          <Text style={[styles.label, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            Name *
+          </Text>
+          <TextInput
+            style={[
+              styles.input,
+              {
+                color: colors.foreground,
+                borderColor: colors.border,
+                borderRadius: colors.radius,
+                backgroundColor: colors.background,
+                fontFamily: "Inter_400Regular",
+              },
+            ]}
+            placeholder="e.g. Books, Projects, Recipes"
+            placeholderTextColor={colors.mutedForeground}
+            value={name}
+            onChangeText={setName}
+            autoFocus
+            returnKeyType="next"
+          />
+
+          <Text style={[styles.label, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            Description
+          </Text>
+          <TextInput
+            style={[
+              styles.input,
+              styles.inputMulti,
+              {
+                color: colors.foreground,
+                borderColor: colors.border,
+                borderRadius: colors.radius,
+                backgroundColor: colors.background,
+                fontFamily: "Inter_400Regular",
+              },
+            ]}
+            placeholder="Optional description"
+            placeholderTextColor={colors.mutedForeground}
+            value={description}
+            onChangeText={setDescription}
+            multiline
+            numberOfLines={2}
+          />
+
+          <Text style={[styles.label, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            Color
+          </Text>
+          <View style={styles.colorRow}>
+            {COLOR_PALETTE.map((c) => (
+              <Pressable
+                key={c}
+                onPress={() => setSelectedColor(c)}
+                style={[
+                  styles.colorDot,
+                  { backgroundColor: c },
+                  selectedColor === c && styles.colorDotSelected,
+                ]}
+              />
+            ))}
+          </View>
+
+          <View style={styles.sheetActions}>
+            <Pressable
+              onPress={handleClose}
+              style={[styles.btn, styles.btnCancel, { borderColor: colors.border, borderRadius: colors.radius }]}
+            >
+              <Text style={[styles.btnText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Cancel
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handleSubmit}
+              disabled={!name.trim() || isPending}
+              style={[
+                styles.btn,
+                styles.btnPrimary,
+                { backgroundColor: colors.primary, borderRadius: colors.radius, opacity: !name.trim() || isPending ? 0.5 : 1 },
+              ]}
+            >
+              {isPending ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={[styles.btnText, { color: "#fff", fontFamily: "Inter_600SemiBold" }]}>
+                  Create
+                </Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { data: categories, isLoading, refetch, isRefetching } = useListCategories();
+  const [showModal, setShowModal] = useState(false);
 
   const isWeb = Platform.OS === "web";
   const topPad = isWeb ? 67 : insets.top;
@@ -72,7 +245,6 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
       <View
         style={[
           styles.header,
@@ -83,12 +255,26 @@ export default function HomeScreen() {
           },
         ]}
       >
-        <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-          Databox
-        </Text>
-        <Text style={[styles.headerSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-          Your personal data workspace
-        </Text>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+              Databox
+            </Text>
+            <Text style={[styles.headerSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              Your personal data workspace
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => setShowModal(true)}
+            style={({ pressed }) => [
+              styles.addBtn,
+              { backgroundColor: colors.primary, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
+            ]}
+            testID="new-category-btn"
+          >
+            <Feather name="plus" size={20} color="#fff" />
+          </Pressable>
+        </View>
       </View>
 
       {isLoading ? (
@@ -120,7 +306,7 @@ export default function HomeScreen() {
                 No categories yet
               </Text>
               <Text style={[styles.emptySubtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                Create categories in the web app to see them here
+                Tap + to create your first category
               </Text>
             </View>
           }
@@ -133,81 +319,64 @@ export default function HomeScreen() {
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         />
       )}
+
+      <NewCategoryModal
+        visible={showModal}
+        onClose={() => setShowModal(false)}
+        onCreated={() => setShowModal(false)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   header: {
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  headerTitle: {
-    fontSize: 34,
-    letterSpacing: -0.5,
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
   },
-  headerSubtitle: {
-    fontSize: 15,
+  headerTitle: { fontSize: 34, letterSpacing: -0.5 },
+  headerSubtitle: { fontSize: 15, marginTop: 4 },
+  addBtn: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 4,
   },
-  list: {
-    padding: 16,
-  },
-  listEmpty: {
-    flex: 1,
-  },
-  centered: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  card: {
-    padding: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  cardTitle: {
-    flex: 1,
-    fontSize: 17,
-  },
-  cardDescription: {
-    fontSize: 14,
-    marginTop: 8,
-    lineHeight: 20,
-  },
-  cardMeta: {
-    fontSize: 12,
-    marginTop: 10,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-    paddingHorizontal: 40,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    textAlign: "center",
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    textAlign: "center",
-    lineHeight: 20,
-  },
+  list: { padding: 16 },
+  listEmpty: { flex: 1 },
+  centered: { flex: 1, alignItems: "center", justifyContent: "center" },
+  card: { padding: 16, borderWidth: StyleSheet.hairlineWidth },
+  cardHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
+  dot: { width: 10, height: 10, borderRadius: 5 },
+  cardTitle: { flex: 1, fontSize: 17 },
+  cardDescription: { fontSize: 14, marginTop: 8, lineHeight: 20 },
+  cardMeta: { fontSize: 12, marginTop: 10, textTransform: "uppercase", letterSpacing: 0.5 },
+  emptyState: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, paddingHorizontal: 40 },
+  emptyTitle: { fontSize: 18, textAlign: "center" },
+  emptySubtitle: { fontSize: 14, textAlign: "center", lineHeight: 20 },
+  // Modal / sheet
+  modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.4)" },
+  modalKAV: { flex: 1, justifyContent: "flex-end" },
+  sheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingTop: 12, gap: 8 },
+  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#ccc", alignSelf: "center", marginBottom: 12 },
+  sheetTitle: { fontSize: 20, marginBottom: 8 },
+  label: { fontSize: 13, marginBottom: 4, marginTop: 4 },
+  input: { borderWidth: StyleSheet.hairlineWidth, padding: 12, fontSize: 15 },
+  inputMulti: { height: 72, textAlignVertical: "top" },
+  colorRow: { flexDirection: "row", gap: 10, flexWrap: "wrap", marginVertical: 4 },
+  colorDot: { width: 30, height: 30, borderRadius: 15 },
+  colorDotSelected: { borderWidth: 3, borderColor: "#fff", shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 4, elevation: 4 },
+  sheetActions: { flexDirection: "row", gap: 12, marginTop: 12 },
+  btn: { flex: 1, paddingVertical: 14, alignItems: "center", justifyContent: "center" },
+  btnCancel: { borderWidth: StyleSheet.hairlineWidth },
+  btnPrimary: {},
+  btnText: { fontSize: 15 },
 });
