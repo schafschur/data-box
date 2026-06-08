@@ -1,7 +1,7 @@
 import { type ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useListCategories, getListInstancesQueryKey } from "@workspace/api-client-react";
-import { Library, Home, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Library, Home, CalendarDays, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SearchBar } from "./SearchBar";
 import { DragProvider, useDrag } from "@/contexts/DragContext";
@@ -116,8 +116,8 @@ function AppLayoutInner({ children }: { children: ReactNode }) {
           "flex-1 py-2 space-y-6 overflow-y-auto",
           collapsed ? "px-2" : "px-4",
         )}>
-          {/* Overview */}
-          <div>
+          {/* Overview + Calendar */}
+          <div className="space-y-1">
             <Link
               href="/"
               className={cn(
@@ -130,6 +130,19 @@ function AppLayoutInner({ children }: { children: ReactNode }) {
             >
               <Home className="h-4 w-4 flex-shrink-0" />
               {!collapsed && "Overview"}
+            </Link>
+            <Link
+              href="/calendar"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                collapsed && "justify-center",
+                location === "/calendar"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "hover:bg-sidebar-accent/50 text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <CalendarDays className="h-4 w-4 flex-shrink-0" />
+              {!collapsed && "Calendar"}
             </Link>
           </div>
 
@@ -225,6 +238,18 @@ function AppLayoutInner({ children }: { children: ReactNode }) {
             >
               <Home className="h-4 w-4" />
               Overview
+            </Link>
+            <Link
+              href="/calendar"
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors flex-shrink-0",
+                location === "/calendar"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "hover:bg-sidebar-accent/50 text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <CalendarDays className="h-4 w-4" />
+              Calendar
             </Link>
             {categories?.map((cat) => (
               <Link
