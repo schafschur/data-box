@@ -56,7 +56,7 @@ interface Photo {
   blockId: number;
   caption: string | null;
   notes: string | null;
-  sortOrder: number;
+  createdAt: string;
 }
 interface ListItem {
   id: number;
@@ -394,7 +394,7 @@ function buildInitialLayout(
     } else if (block.type === "photo") {
       const photos = (mapData.photos ?? [])
         .filter((p) => p.blockId === block.id)
-        .sort((a, b) => a.sortOrder - b.sortOrder);
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
       nodes.push({
         id: blockNodeId,
         type: "photoBlock",

@@ -46,7 +46,7 @@ router.get("/instances/:id/map-data", async (req: Request, res: Response) => {
           blockId:   photosTable.blockId,
           caption:   photosTable.caption,
           notes:     photosTable.notes,
-          sortOrder: photosTable.sortOrder,
+          createdAt: photosTable.createdAt,
         }).from(photosTable).where(inArray(photosTable.blockId, photoBlockIds))
       : Promise.resolve([]),
     contactBlockIds.length
