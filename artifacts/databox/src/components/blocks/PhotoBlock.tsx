@@ -11,6 +11,7 @@ import {
   Upload, Loader2, X, ZoomIn, ZoomOut,
   ChevronLeft, ChevronRight, CalendarDays, LayoutGrid, Tag, Trash2, RotateCw,
 } from "lucide-react";
+import { format, isToday, isPast, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 
 type ViewMode = "grid" | "calendar" | "categories";
@@ -20,13 +21,6 @@ function getPhotoDate(photo: Photo): string {
     ?? photo.createdAt.slice(0, 10);
 }
 
-function pad2(n: number) { return String(n).padStart(2, "0"); }
-function toDateStr(year: number, month: number, day: number) {
-  return `${year}-${pad2(month + 1)}-${pad2(day)}`;
-}
-function monthLabel(year: number, month: number) {
-  return new Date(year, month).toLocaleString("default", { month: "long", year: "numeric" });
-}
 
 function PhotoThumbnail({
   photo,
@@ -35,14 +29,16 @@ function PhotoThumbnail({
 }: {
   photo: Photo;
   onClick: () => void;
-  size?: "normal" | "small";
+  size?: "normal" | "medium" | "small";
 }) {
   return (
     <button
       onClick={onClick}
       className={cn(
-        "group relative overflow-hidden rounded bg-muted",
-        size === "normal" ? "aspect-square" : "w-8 h-8 rounded-sm flex-shrink-0",
+        "group relative overflow-hidden rounded bg-muted flex-shrink-0",
+        size === "normal" ? "aspect-square" :
+        size === "medium" ? "w-20 h-20 rounded-md" :
+        "w-8 h-8 rounded-sm",
       )}
     >
       <img
@@ -95,89 +91,79 @@ function CalendarView({
   photos: Photo[];
   onPhotoClick: (idx: number) => void;
 }) {
-  const today = new Date();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth());
-
-  const photosByDate = useMemo(() => {
+  const groups = useMemo(() => {
     const map = new Map<string, Photo[]>();
     for (const photo of photos) {
       const d = getPhotoDate(photo);
       map.set(d, [...(map.get(d) ?? []), photo]);
     }
-    return map;
+    return [...map.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([dateStr, items]) => ({ dateStr, items }));
   }, [photos]);
 
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDow = new Date(year, month, 1).getDay();
-  const cells: Array<{ day: number; dateStr: string } | null> = [];
-  for (let i = 0; i < firstDow; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) {
-    cells.push({ day: d, dateStr: toDateStr(year, month, d) });
+  if (photos.length === 0) {
+    return (
+      <p className="text-center text-sm text-muted-foreground py-6">No photos yet</p>
+    );
   }
-
-  const prevMonth = () => {
-    if (month === 0) { setYear(y => y - 1); setMonth(11); }
-    else setMonth(m => m - 1);
-  };
-  const nextMonth = () => {
-    if (month === 11) { setYear(y => y + 1); setMonth(0); }
-    else setMonth(m => m + 1);
-  };
-
-  const todayStr = toDateStr(today.getFullYear(), today.getMonth(), today.getDate());
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <button onClick={prevMonth} className="p-1 rounded hover:bg-muted transition-colors">
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <span className="text-sm font-medium">{monthLabel(year, month)}</span>
-        <button onClick={nextMonth} className="p-1 rounded hover:bg-muted transition-colors">
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
+      {groups.map(({ dateStr, items }) => {
+        const date = parseISO(dateStr);
+        const isDateToday = isToday(date);
+        const isDatePast = isPast(date) && !isDateToday;
 
-      <div className="grid grid-cols-7 gap-px">
-        {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => (
-          <div key={d} className="text-center text-xs text-muted-foreground py-1">{d}</div>
-        ))}
-        {cells.map((cell, i) => {
-          if (!cell) return <div key={`blank-${i}`} className="min-h-[56px]" />;
-          const dayPhotos = photosByDate.get(cell.dateStr) ?? [];
-          const isToday = cell.dateStr === todayStr;
-          return (
-            <div
-              key={cell.dateStr}
-              className={cn(
-                "min-h-[56px] p-1 rounded border text-xs",
-                isToday ? "border-primary/40 bg-primary/5" : "border-transparent hover:border-border",
-                dayPhotos.length > 0 && "bg-muted/40",
-              )}
-            >
-              <span className={cn("font-medium", isToday && "text-primary")}>{cell.day}</span>
-              {dayPhotos.length > 0 && (
-                <div className="flex flex-wrap gap-0.5 mt-0.5">
-                  {dayPhotos.slice(0, 4).map(photo => {
-                    const idx = photos.indexOf(photo);
-                    return (
-                      <PhotoThumbnail key={photo.id} photo={photo} onClick={() => onPhotoClick(idx)} size="small" />
-                    );
-                  })}
-                  {dayPhotos.length > 4 && (
-                    <span className="text-[10px] text-muted-foreground self-end">+{dayPhotos.length - 4}</span>
-                  )}
-                </div>
-              )}
+        return (
+          <div
+            key={dateStr}
+            className={cn(
+              "flex items-start gap-4 p-4 rounded-lg border transition-all",
+              isDateToday
+                ? "bg-primary/5 border-primary/20 shadow-sm"
+                : "bg-card hover:border-primary/30",
+              isDatePast && "opacity-70"
+            )}
+          >
+            <div className={cn(
+              "w-12 flex-shrink-0 flex flex-col items-center justify-center rounded-md py-1",
+              isDateToday
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground"
+            )}>
+              <span className="text-xs uppercase font-medium">{format(date, "MMM")}</span>
+              <span className="text-lg font-serif leading-tight">{format(date, "d")}</span>
             </div>
-          );
-        })}
-      </div>
 
-      {photos.length === 0 && (
-        <p className="text-center text-sm text-muted-foreground py-4">No photos yet</p>
-      )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm text-muted-foreground">
+                  {format(date, "EEEE, MMMM d, yyyy")}
+                </span>
+                {isDateToday && (
+                  <span className="text-[10px] uppercase tracking-wider bg-primary/20 text-primary px-1.5 py-0.5 rounded font-bold">
+                    Today
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {items.map(photo => {
+                  const idx = photos.indexOf(photo);
+                  return (
+                    <PhotoThumbnail
+                      key={photo.id}
+                      photo={photo}
+                      onClick={() => onPhotoClick(idx)}
+                      size="medium"
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
