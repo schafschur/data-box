@@ -9,7 +9,6 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   ActivityIndicator,
-  findNodeHandle,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -271,15 +270,12 @@ export default function InstanceScreen() {
     if (!highlightBlockId || !scrollViewRef.current) return;
     const ref = blockRefs.current.get(highlightBlockId);
     if (!ref) return;
-    const scrollNode = findNodeHandle(scrollViewRef.current);
-    if (!scrollNode) return;
-    ref.measureLayout(
-      scrollNode,
-      (_x, y) => {
-        scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 20), animated: true });
-      },
-      () => {},
-    );
+    ref.measure((_x, _y, _w, _h, _pageX, blockPageY) => {
+      scrollViewRef.current?.measure((_sx, _sy, _sw, _sh, _spageX, svPageY) => {
+        const relativeY = blockPageY - svPageY;
+        scrollViewRef.current?.scrollTo({ y: Math.max(0, relativeY - 20), animated: true });
+      });
+    });
   }, [highlightBlockId]);
 
   useEffect(() => {
