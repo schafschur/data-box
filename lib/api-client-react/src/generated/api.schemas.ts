@@ -25,6 +25,7 @@ export const SearchResultBlockType = {
   calendar: 'calendar',
   photo: 'photo',
   pdf: 'pdf',
+  contact: 'contact',
 } as const;
 
 export interface SearchResult {
@@ -96,6 +97,7 @@ export const BlockType = {
   calendar: 'calendar',
   photo: 'photo',
   pdf: 'pdf',
+  contact: 'contact',
 } as const;
 
 /**
@@ -306,6 +308,41 @@ export interface UploadUrlResponse {
   uploadURL: string;
   objectPath: string;
 }
+
+export interface ContactCard {
+  id: number;
+  blockId: number;
+  firstName: string;
+  lastName: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  photoPath?: string | null;
+  color: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContactCardInput {
+  firstName: string;
+  lastName: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  color: string;
+}
+
+export type ContactCardReorderBody = {
+  ids: number[];
+};
 
 export type SearchParams = {
 /**

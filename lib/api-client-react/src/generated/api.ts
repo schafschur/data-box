@@ -43,7 +43,10 @@ import type {
   TodoItemInput,
   TodoItemUpdate,
   UploadUrlRequest,
-  UploadUrlResponse
+  UploadUrlResponse,
+  ContactCard,
+  ContactCardInput,
+  ContactCardReorderBody
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -2575,3 +2578,166 @@ export function useGetStorageObject<TData = Awaited<ReturnType<typeof getStorage
 
 
 
+
+
+// ─────────────────────────── Contact Cards ───────────────────────────
+
+export const getListContactCardsUrl = (blockId: number) =>
+  `/api/blocks/${blockId}/contact-cards`;
+
+export const getListContactCardsQueryKey = (blockId: number) =>
+  [getListContactCardsUrl(blockId)] as const;
+
+export const listContactCards = async (
+  blockId: number,
+  options?: SecondParameter<typeof customFetch>
+): Promise<ContactCard[]> =>
+  customFetch<ContactCard[]>(getListContactCardsUrl(blockId), options);
+
+export const getListContactCardsQueryOptions = <TData = ContactCard[], TError = ErrorType<unknown>>(
+  blockId: number,
+  options?: {
+    query?: UseQueryOptions<ContactCard[], TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  }
+) => {
+  const { query: queryOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getListContactCardsQueryKey(blockId);
+  return {
+    queryKey,
+    queryFn: () => listContactCards(blockId),
+    enabled: !!blockId,
+    ...queryOptions,
+  } as UseQueryOptions<ContactCard[], TError, TData> & { queryKey: QueryKey };
+};
+
+export function useListContactCards<TData = ContactCard[], TError = ErrorType<unknown>>(
+  blockId: number,
+  options?: {
+    query?: UseQueryOptions<ContactCard[], TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListContactCardsQueryOptions<TData, TError>(blockId, options);
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const createContactCard = async (
+  blockId: number,
+  data: BodyType<ContactCardInput>,
+  options?: SecondParameter<typeof customFetch>
+): Promise<ContactCard> =>
+  customFetch<ContactCard>(getListContactCardsUrl(blockId), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data,
+    ...options,
+  } as Parameters<typeof customFetch>[1]);
+
+export const useCreateContactCard = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      ContactCard,
+      TError,
+      { blockId: number; data: BodyType<ContactCardInput> },
+      TContext
+    >;
+  }
+): UseMutationResult<
+  ContactCard,
+  TError,
+  { blockId: number; data: BodyType<ContactCardInput> },
+  TContext
+> =>
+  useMutation({
+    mutationFn: ({ blockId, data }) => createContactCard(blockId, data),
+    ...options?.mutation,
+  });
+
+export const getUpdateContactCardUrl = (id: number) => `/api/contact-cards/${id}`;
+
+export const updateContactCard = async (
+  id: number,
+  data: BodyType<ContactCardInput>,
+  options?: SecondParameter<typeof customFetch>
+): Promise<ContactCard> =>
+  customFetch<ContactCard>(getUpdateContactCardUrl(id), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    data,
+    ...options,
+  } as Parameters<typeof customFetch>[1]);
+
+export const useUpdateContactCard = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      ContactCard,
+      TError,
+      { id: number; data: BodyType<ContactCardInput> },
+      TContext
+    >;
+  }
+): UseMutationResult<
+  ContactCard,
+  TError,
+  { id: number; data: BodyType<ContactCardInput> },
+  TContext
+> =>
+  useMutation({
+    mutationFn: ({ id, data }) => updateContactCard(id, data),
+    ...options?.mutation,
+  });
+
+export const getDeleteContactCardUrl = (id: number) => `/api/contact-cards/${id}`;
+
+export const deleteContactCard = async (
+  id: number,
+  options?: SecondParameter<typeof customFetch>
+): Promise<void> =>
+  customFetch<void>(getDeleteContactCardUrl(id), { method: "DELETE", ...options } as Parameters<typeof customFetch>[1]);
+
+export const useDeleteContactCard = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<void, TError, { id: number }, TContext>;
+  }
+): UseMutationResult<void, TError, { id: number }, TContext> =>
+  useMutation({
+    mutationFn: ({ id }) => deleteContactCard(id),
+    ...options?.mutation,
+  });
+
+export const getReorderContactCardsUrl = (blockId: number) =>
+  `/api/blocks/${blockId}/contact-cards/reorder`;
+
+export const reorderContactCards = async (
+  blockId: number,
+  data: ContactCardReorderBody,
+  options?: SecondParameter<typeof customFetch>
+): Promise<void> =>
+  customFetch<void>(getReorderContactCardsUrl(blockId), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    data,
+    ...options,
+  } as Parameters<typeof customFetch>[1]);
+
+export const useReorderContactCards = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      void,
+      TError,
+      { blockId: number; data: ContactCardReorderBody },
+      TContext
+    >;
+  }
+): UseMutationResult<
+  void,
+  TError,
+  { blockId: number; data: ContactCardReorderBody },
+  TContext
+> =>
+  useMutation({
+    mutationFn: ({ blockId, data }) => reorderContactCards(blockId, data),
+    ...options?.mutation,
+  });

@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect, type ComponentType } from "react";
 import { Block, useDeleteBlock, useUpdateBlock, getListBlocksQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { Trash2, GripVertical, FileText, CheckSquare, Calendar, Image as ImageIcon, Check, Flame, BookOpen } from "lucide-react";
+import { Trash2, GripVertical, FileText, CheckSquare, Calendar, Image as ImageIcon, Check, Flame, BookOpen, Users } from "lucide-react";
 import { RichTextBlock } from "./RichTextBlock";
 import { TodoBlock } from "./TodoBlock";
 import { CalendarBlock } from "./CalendarBlock";
 import { PhotoBlock } from "./PhotoBlock";
 import { PdfBlock } from "./PdfBlock";
+import { ContactBlock } from "./ContactBlock";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
@@ -19,6 +20,7 @@ const ICONS: Record<string, ComponentType<{ className?: string }>> = {
   calendar: Calendar,
   photo: ImageIcon,
   pdf: BookOpen,
+  contact: Users,
 };
 
 function importanceBadgeClass(imp: number): string {
@@ -236,6 +238,7 @@ export function BlockRenderer({ block, dragHandleRef, dragHandleAttributes, drag
           {block.type === "calendar" && <CalendarBlock block={block} />}
           {block.type === "photo" && <PhotoBlock block={block} />}
           {block.type === "pdf" && <PdfBlock block={block} />}
+          {block.type === "contact" && <ContactBlock block={block} />}
         </div>
       </div>
     </div>

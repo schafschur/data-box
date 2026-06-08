@@ -222,7 +222,7 @@ export const CreateBlockParams = zod.object({
 })
 
 export const CreateBlockBody = zod.object({
-  "type": zod.enum(['richtext', 'todo', 'calendar', 'photo', 'pdf']),
+  "type": zod.enum(['richtext', 'todo', 'calendar', 'photo', 'pdf', 'contact']),
   "title": zod.string().nullish(),
   "importance": zod.number().int().min(1).max(10).nullish()
 })
@@ -594,3 +594,56 @@ export const GetStorageObjectParams = zod.object({
 })
 
 
+
+
+// ─────────────────────────── Contact Cards ───────────────────────────
+
+export const ListContactCardsParams = zod.object({
+  blockId: zod.coerce.number(),
+});
+
+export const CreateContactCardParams = zod.object({
+  blockId: zod.coerce.number(),
+});
+
+export const CreateContactCardBody = zod.object({
+  firstName: zod.string(),
+  lastName: zod.string(),
+  description: zod.string().nullish(),
+  email: zod.string().nullish(),
+  phone: zod.string().nullish(),
+  color: zod.string(),
+});
+
+export const UpdateContactCardParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateContactCardBody = zod.object({
+  firstName: zod.string(),
+  lastName: zod.string(),
+  description: zod.string().nullish(),
+  email: zod.string().nullish(),
+  phone: zod.string().nullish(),
+  color: zod.string(),
+});
+
+export const DeleteContactCardParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ReorderContactCardsParams = zod.object({
+  blockId: zod.coerce.number(),
+});
+
+export const ReorderContactCardsBody = zod.object({
+  ids: zod.array(zod.number()),
+});
+
+export const UploadContactPhotoParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteContactPhotoParams = zod.object({
+  id: zod.coerce.number(),
+});
