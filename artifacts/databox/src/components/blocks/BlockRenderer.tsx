@@ -38,10 +38,16 @@ export function BlockRenderer({ block, dragHandleRef, dragHandleAttributes, drag
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [title, setTitle] = useState(block.title || "");
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [localImportance, setLocalImportance] = useState<number | null>(block.importance ?? null);
   const pickerRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const deleteBlock = useDeleteBlock();
   const updateBlock = useUpdateBlock();
+
+  // Keep local importance in sync when parent block data refreshes
+  useEffect(() => {
+    setLocalImportance(block.importance ?? null);
+  }, [block.importance]);
 
   const Icon = ICONS[block.type];
 
@@ -83,18 +89,26 @@ export function BlockRenderer({ block, dragHandleRef, dragHandleAttributes, drag
   };
 
   const handleSetImportance = (value: number | null) => {
+    const previous = localImportance;
+    // Optimistic update: close picker and show badge immediately
+    setLocalImportance(value);
+    setPickerOpen(false);
+
     updateBlock.mutate(
       { id: block.id, data: { importance: value } },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListBlocksQueryKey(block.instanceId) });
-          setPickerOpen(false);
+        },
+        onError: () => {
+          // Revert on failure
+          setLocalImportance(previous);
         }
       }
     );
   };
 
-  const imp = block.importance;
+  const imp = localImportance;
   const badgeClass = imp ? importanceBadgeClass(imp) : "";
 
   return (
