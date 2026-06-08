@@ -8,6 +8,9 @@ export const photosTable = pgTable("photos", {
   blockId: integer("block_id").notNull().references(() => blocksTable.id, { onDelete: "cascade" }),
   objectPath: text("object_path").notNull(),
   caption: text("caption"),
+  notes: text("notes"),
+  displayDate: text("display_date"),
+  photoCategory: text("photo_category"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

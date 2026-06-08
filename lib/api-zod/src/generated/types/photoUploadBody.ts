@@ -9,4 +9,6 @@
 export interface PhotoUploadBody {
   file: Blob;
   caption?: string;
+  notes?: string;
+  photoCategory?: string;
 }

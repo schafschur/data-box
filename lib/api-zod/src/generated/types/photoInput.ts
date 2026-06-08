@@ -10,4 +10,8 @@ export interface PhotoInput {
   objectPath: string;
   /** @nullable */
   caption?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  photoCategory?: string | null;
 }

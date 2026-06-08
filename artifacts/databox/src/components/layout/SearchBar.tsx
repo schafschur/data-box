@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { useSearch } from "@workspace/api-client-react";
+import { useSearch, getSearchQueryKey } from "@workspace/api-client-react";
 import type { SearchResult } from "@workspace/api-client-react";
 import { Search, FileText, CheckSquare, CalendarDays, Image, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,10 +28,12 @@ export function SearchBar() {
     return () => clearTimeout(timer);
   }, [query]);
 
+  const searchParams = { q: debouncedQuery };
   const { data: results, isFetching } = useSearch(
-    { q: debouncedQuery },
+    searchParams,
     {
       query: {
+        queryKey: getSearchQueryKey(searchParams),
         enabled: debouncedQuery.trim().length >= 2,
         staleTime: 30_000,
       },

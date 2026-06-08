@@ -198,6 +198,12 @@ export interface Photo {
   objectPath: string;
   /** @nullable */
   caption?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  displayDate?: string | null;
+  /** @nullable */
+  photoCategory?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -206,16 +212,28 @@ export interface PhotoInput {
   objectPath: string;
   /** @nullable */
   caption?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  photoCategory?: string | null;
 }
 
 export interface PhotoUploadBody {
   file: Blob;
   caption?: string;
+  notes?: string;
+  photoCategory?: string;
 }
 
 export interface PhotoUpdate {
   /** @nullable */
   caption?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  displayDate?: string | null;
+  /** @nullable */
+  photoCategory?: string | null;
 }
 
 export interface KeywordCount {

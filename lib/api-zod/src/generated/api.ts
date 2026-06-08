@@ -449,6 +449,9 @@ export const ListPhotosResponseItem = zod.object({
   "blockId": zod.number(),
   "objectPath": zod.string(),
   "caption": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "displayDate": zod.string().nullish(),
+  "photoCategory": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -464,7 +467,9 @@ export const AddPhotoParams = zod.object({
 
 export const AddPhotoBody = zod.object({
   "objectPath": zod.string(),
-  "caption": zod.string().nullish()
+  "caption": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "photoCategory": zod.string().nullish()
 })
 
 
@@ -477,7 +482,9 @@ export const UploadPhotoParams = zod.object({
 
 export const UploadPhotoBody = zod.object({
   "file": zod.instanceof(File),
-  "caption": zod.string().optional()
+  "caption": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "photoCategory": zod.string().optional()
 })
 
 
@@ -489,7 +496,10 @@ export const UpdatePhotoParams = zod.object({
 })
 
 export const UpdatePhotoBody = zod.object({
-  "caption": zod.string().nullish()
+  "caption": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "displayDate": zod.string().nullish(),
+  "photoCategory": zod.string().nullish()
 })
 
 export const UpdatePhotoResponse = zod.object({
@@ -497,6 +507,9 @@ export const UpdatePhotoResponse = zod.object({
   "blockId": zod.number(),
   "objectPath": zod.string(),
   "caption": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "displayDate": zod.string().nullish(),
+  "photoCategory": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })

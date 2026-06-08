@@ -946,6 +946,12 @@ components:
           type: string
         caption:
           type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        displayDate:
+          type: ["string", "null"]
+        photoCategory:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
@@ -961,6 +967,10 @@ components:
           type: string
         caption:
           type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        photoCategory:
+          type: ["string", "null"]
       required: [objectPath]
 
     PhotoUploadBody:
@@ -971,12 +981,22 @@ components:
           format: binary
         caption:
           type: string
+        notes:
+          type: string
+        photoCategory:
+          type: string
       required: [file]
 
     PhotoUpdate:
       type: object
       properties:
         caption:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        displayDate:
+          type: ["string", "null"]
+        photoCategory:
           type: ["string", "null"]
 
     # ── Analysis ──────────────────────────────────────────────────────────

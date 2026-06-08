@@ -2143,6 +2143,12 @@ formData.append(`file`, photoUploadBody.file);
 if(photoUploadBody.caption !== undefined) {
  formData.append(`caption`, photoUploadBody.caption);
  }
+if(photoUploadBody.notes !== undefined) {
+ formData.append(`notes`, photoUploadBody.notes);
+ }
+if(photoUploadBody.photoCategory !== undefined) {
+ formData.append(`photoCategory`, photoUploadBody.photoCategory);
+ }
 
   return customFetch<Photo>(getUploadPhotoUrl(blockId),
   {

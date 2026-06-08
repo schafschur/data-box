@@ -12,6 +12,12 @@ export interface Photo {
   objectPath: string;
   /** @nullable */
   caption?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  displayDate?: string | null;
+  /** @nullable */
+  photoCategory?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

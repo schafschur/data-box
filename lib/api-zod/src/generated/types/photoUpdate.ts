@@ -9,4 +9,10 @@
 export interface PhotoUpdate {
   /** @nullable */
   caption?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  displayDate?: string | null;
+  /** @nullable */
+  photoCategory?: string | null;
 }

@@ -2,6 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { eq, asc } from "drizzle-orm";
 import multer from "multer";
 import { randomUUID } from "crypto";
+import sharp from "sharp";
 import { db } from "@workspace/db";
 import { photosTable } from "@workspace/db";
 import {
@@ -17,6 +18,16 @@ import { objectStorageClient, ObjectStorageService, ObjectNotFoundError } from "
 const router: IRouter = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 const objectStorageService = new ObjectStorageService();
+
+const MAX_WIDTH = 1024;
+
+async function resizeIfNeeded(buffer: Buffer, mimetype: string): Promise<Buffer> {
+  const metadata = await sharp(buffer).metadata();
+  if (!metadata.width || metadata.width <= MAX_WIDTH) return buffer;
+  const resizer = sharp(buffer).resize({ width: MAX_WIDTH, withoutEnlargement: true });
+  if (mimetype === "image/png") return resizer.png().toBuffer();
+  return resizer.jpeg({ quality: 85 }).toBuffer();
+}
 
 router.get("/blocks/:blockId/photos", async (req: Request, res: Response) => {
   const { blockId } = ListPhotosParams.parse(req.params);
@@ -37,6 +48,8 @@ router.post("/blocks/:blockId/photos/upload", upload.single("file"), async (req:
   }
 
   try {
+    const resizedBuffer = await resizeIfNeeded(req.file.buffer, req.file.mimetype);
+
     const privateObjectDir = objectStorageService.getPrivateObjectDir();
     const objectId = randomUUID();
     const ext = (req.file.originalname.split(".").pop() || "jpg").toLowerCase();
@@ -49,7 +62,7 @@ router.post("/blocks/:blockId/photos/upload", upload.single("file"), async (req:
 
     const bucket = objectStorageClient.bucket(bucketName);
     const file = bucket.file(objectName);
-    await file.save(req.file.buffer, {
+    await file.save(resizedBuffer, {
       metadata: { contentType: req.file.mimetype },
     });
 
@@ -57,12 +70,15 @@ router.post("/blocks/:blockId/photos/upload", upload.single("file"), async (req:
     const objectPath = objectStorageService.normalizeObjectEntityPath(storageUrl);
 
     const caption = typeof req.body.caption === "string" && req.body.caption.trim()
-      ? req.body.caption.trim()
-      : null;
+      ? req.body.caption.trim() : null;
+    const notes = typeof req.body.notes === "string" && req.body.notes.trim()
+      ? req.body.notes.trim() : null;
+    const photoCategory = typeof req.body.photoCategory === "string" && req.body.photoCategory.trim()
+      ? req.body.photoCategory.trim() : null;
 
     const [row] = await db
       .insert(photosTable)
-      .values({ objectPath, blockId, ...(caption ? { caption } : {}) })
+      .values({ objectPath, blockId, ...(caption ? { caption } : {}), ...(notes ? { notes } : {}), ...(photoCategory ? { photoCategory } : {}) })
       .returning();
 
     res.status(201).json(row);
