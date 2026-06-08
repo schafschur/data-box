@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, type ComponentType } from "react";
 import { Block, useDeleteBlock, useUpdateBlock, getListBlocksQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { Trash2, GripVertical, FileText, CheckSquare, Calendar, Image as ImageIcon, Check, Flame, BookOpen, Users, List } from "lucide-react";
+import { Trash2, FileText, CheckSquare, Calendar, Image as ImageIcon, Check, Flame, BookOpen, Users, List } from "lucide-react";
 import { RichTextBlock } from "./RichTextBlock";
 import { TodoBlock } from "./TodoBlock";
 import { CalendarBlock } from "./CalendarBlock";
@@ -11,8 +11,6 @@ import { ContactBlock } from "./ContactBlock";
 import { ListBlock } from "./ListBlock";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
-import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
-import type { DraggableAttributes } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 
 const ICONS: Record<string, ComponentType<{ className?: string }>> = {
@@ -43,12 +41,9 @@ function importanceStripeColor(imp: number): string {
 
 interface BlockRendererProps {
   block: Block;
-  dragHandleRef?: (node: HTMLElement | null) => void;
-  dragHandleAttributes?: DraggableAttributes;
-  dragHandleListeners?: SyntheticListenerMap;
 }
 
-export function BlockRenderer({ block, dragHandleRef, dragHandleAttributes, dragHandleListeners }: BlockRendererProps) {
+export function BlockRenderer({ block }: BlockRendererProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [title, setTitle] = useState(block.title || "");
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -133,19 +128,7 @@ export function BlockRenderer({ block, dragHandleRef, dragHandleAttributes, drag
           style={{ backgroundColor: importanceStripeColor(imp) }}
         />
       )}
-      <div
-        ref={dragHandleRef}
-        {...dragHandleAttributes}
-        {...dragHandleListeners}
-        className={cn(
-          "absolute left-0 bottom-0 w-8 bg-muted/30 flex items-start justify-center pt-4 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing touch-none rounded-l-xl",
-          imp ? "top-[5px]" : "top-0"
-        )}
-      >
-        <GripVertical className="w-4 h-4 text-muted-foreground" />
-      </div>
-
-      <div className={cn("pl-10 p-6", imp && "pt-8")}>
+      <div className={cn("p-6", imp && "pt-8")}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3 min-w-0">
             <div className="p-2 bg-primary/10 rounded-md text-primary shrink-0">
