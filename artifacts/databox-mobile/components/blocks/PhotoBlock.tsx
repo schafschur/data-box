@@ -26,9 +26,16 @@ import { useColors } from "@/hooks/useColors";
 
 const THUMB_SIZE = (Dimensions.get("window").width - 32 - 28 - 8 - 14 * 2) / 3;
 
+const domain = process.env.EXPO_PUBLIC_DOMAIN;
+
+function photoUri(photo: Photo): string {
+  if (!photo.objectPath) return "";
+  return `https://${domain}/api/storage${photo.objectPath}`;
+}
+
 function PhotoThumb({ photo, onPress }: { photo: Photo; onPress: () => void }) {
   const colors = useColors();
-  const uri = photo.url ?? "";
+  const uri = photoUri(photo);
 
   return (
     <Pressable
@@ -149,7 +156,7 @@ export function PhotoBlock({ block }: { block: Block }) {
             <PhotoThumb
               key={photo.id}
               photo={photo}
-              onPress={() => setLightboxUri(photo.url ?? null)}
+              onPress={() => setLightboxUri(photoUri(photo) || null)}
             />
           ))}
           {uploading && (
