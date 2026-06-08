@@ -18,6 +18,7 @@ export function CategoryDetail() {
   const queryClient = useQueryClient();
 
   const [editOpen, setEditOpen] = useState(false);
+  const [hoveredInstanceId, setHoveredInstanceId] = useState<number | null>(null);
 
   const { data: category, isLoading: isCategoryLoading } = useGetCategory(id, {
     query: { enabled: !!id, queryKey: getGetCategoryQueryKey(id) }
@@ -111,10 +112,29 @@ export function CategoryDetail() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {instances?.map((instance) => (
-              <Link key={instance.id} href={`/instances/${instance.id}`}>
-                <Card className="hover:border-primary/50 transition-colors cursor-pointer group hover-elevate h-full flex flex-col justify-between">
+              <Link
+                key={instance.id}
+                href={`/instances/${instance.id}`}
+                onMouseEnter={() => setHoveredInstanceId(instance.id)}
+                onMouseLeave={() => setHoveredInstanceId(null)}
+              >
+                <Card
+                  className="transition-colors cursor-pointer hover-elevate h-full flex flex-col justify-between"
+                  style={{
+                    borderColor: hoveredInstanceId === instance.id
+                      ? `${category?.color}80`
+                      : undefined,
+                  }}
+                >
                   <CardHeader>
-                    <CardTitle className="font-serif text-xl group-hover:text-primary transition-colors">
+                    <CardTitle
+                      className="font-serif text-xl transition-colors"
+                      style={{
+                        color: hoveredInstanceId === instance.id
+                          ? category?.color
+                          : undefined,
+                      }}
+                    >
                       {instance.name}
                     </CardTitle>
                     {instance.description && (

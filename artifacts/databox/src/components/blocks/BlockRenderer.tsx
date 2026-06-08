@@ -27,6 +27,14 @@ function importanceBadgeClass(imp: number): string {
   return "bg-orange-50 text-orange-500 border-orange-200";
 }
 
+function importanceStripeColor(imp: number): string {
+  if (imp <= 2) return "#94a3b8";
+  if (imp <= 4) return "#60a5fa";
+  if (imp <= 6) return "#2dd4bf";
+  if (imp <= 8) return "#fbbf24";
+  return "#f97316";
+}
+
 interface BlockRendererProps {
   block: Block;
   dragHandleRef?: (node: HTMLElement | null) => void;
@@ -113,16 +121,25 @@ export function BlockRenderer({ block, dragHandleRef, dragHandleAttributes, drag
 
   return (
     <div className="group relative bg-card rounded-xl shadow-sm border border-card-border overflow-visible transition-shadow hover:shadow-md">
+      {imp && (
+        <div
+          className="absolute top-0 left-0 right-0 h-[5px] rounded-t-xl z-10 pointer-events-none"
+          style={{ backgroundColor: importanceStripeColor(imp) }}
+        />
+      )}
       <div
         ref={dragHandleRef}
         {...dragHandleAttributes}
         {...dragHandleListeners}
-        className="absolute left-0 top-0 bottom-0 w-8 bg-muted/30 flex items-start justify-center pt-4 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing touch-none rounded-l-xl"
+        className={cn(
+          "absolute left-0 bottom-0 w-8 bg-muted/30 flex items-start justify-center pt-4 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing touch-none rounded-l-xl",
+          imp ? "top-[5px]" : "top-0"
+        )}
       >
         <GripVertical className="w-4 h-4 text-muted-foreground" />
       </div>
 
-      <div className="pl-10 p-6">
+      <div className={cn("pl-10 p-6", imp && "pt-8")}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3 min-w-0">
             <div className="p-2 bg-primary/10 rounded-md text-primary shrink-0">

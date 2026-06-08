@@ -25,6 +25,16 @@ interface BlockData {
   type: string;
   title: string | null;
   content: unknown;
+  importance?: number | null;
+}
+
+function importanceBgColor(imp: number | null | undefined): string | undefined {
+  if (!imp) return undefined;
+  if (imp <= 2) return "#f8fafc";
+  if (imp <= 4) return "#eff6ff";
+  if (imp <= 6) return "#f0fdfa";
+  if (imp <= 8) return "#fffbeb";
+  return "#fff7ed";
 }
 interface TodoItem {
   id: number;
@@ -69,19 +79,21 @@ function NodeCard({
   title,
   children,
   accent,
+  bg,
 }: {
   icon: React.ReactNode;
   title: string;
   children?: React.ReactNode;
   accent: string;
+  bg?: string;
 }) {
   return (
     <>
       <Handle id="top"    type="target" position={Position.Top}    style={handleStyle(accent)} />
       <Handle id="left"   type="target" position={Position.Left}   style={handleStyle(accent)} />
       <div
-        className="rounded-xl shadow-md bg-card border border-card-border text-card-foreground min-w-[180px] max-w-[260px] overflow-hidden"
-        style={{ borderTopColor: accent, borderTopWidth: 3 }}
+        className="rounded-xl shadow-md border border-card-border text-card-foreground min-w-[180px] max-w-[260px] overflow-hidden"
+        style={{ borderTopColor: accent, borderTopWidth: 3, backgroundColor: bg ?? "var(--card)" }}
       >
         <div className="flex items-center gap-2 px-3 py-2 border-b border-card-border bg-muted/40">
           <span style={{ color: accent }}>{icon}</span>
@@ -100,9 +112,9 @@ function NodeCard({
 }
 
 /* ─── Node type renderers ────────────────────────────────────────────── */
-function RichtextNode({ data }: { data: { title: string; preview: string } }) {
+function RichtextNode({ data }: { data: { title: string; preview: string; importance?: number | null } }) {
   return (
-    <NodeCard icon={<FileText className="w-3.5 h-3.5" />} title={data.title} accent="hsl(176 43% 52%)">
+    <NodeCard icon={<FileText className="w-3.5 h-3.5" />} title={data.title} accent="hsl(176 43% 52%)" bg={importanceBgColor(data.importance)}>
       {data.preview && (
         <p className="line-clamp-3 leading-relaxed">{data.preview}</p>
       )}
@@ -110,11 +122,11 @@ function RichtextNode({ data }: { data: { title: string; preview: string } }) {
   );
 }
 
-function TodoBlockNode({ data }: { data: { title: string; count: number; done: number } }) {
+function TodoBlockNode({ data }: { data: { title: string; count: number; done: number; importance?: number | null } }) {
   const pct = data.count > 0 ? Math.round((data.done / data.count) * 100) : 0;
   const accent = "hsl(16 75% 61%)";
   return (
-    <NodeCard icon={<CheckSquare className="w-3.5 h-3.5" />} title={data.title} accent={accent}>
+    <NodeCard icon={<CheckSquare className="w-3.5 h-3.5" />} title={data.title} accent={accent} bg={importanceBgColor(data.importance)}>
       <div className="flex items-center justify-between mb-1">
         <span>{data.done}/{data.count} done</span>
         <span className="font-medium">{pct}%</span>
@@ -146,9 +158,9 @@ function TodoItemNode({ data }: { data: { text: string; completed: boolean } }) 
   );
 }
 
-function CalendarBlockNode({ data }: { data: { title: string; count: number } }) {
+function CalendarBlockNode({ data }: { data: { title: string; count: number; importance?: number | null } }) {
   return (
-    <NodeCard icon={<Calendar className="w-3.5 h-3.5" />} title={data.title} accent="hsl(346 58% 57%)">
+    <NodeCard icon={<Calendar className="w-3.5 h-3.5" />} title={data.title} accent="hsl(346 58% 57%)" bg={importanceBgColor(data.importance)}>
       <span>{data.count} event{data.count !== 1 ? "s" : ""}</span>
     </NodeCard>
   );
@@ -201,7 +213,7 @@ function buildInitialLayout(
         id: blockNodeId,
         type: "richtext",
         position: { x: baseX, y: baseY },
-        data: { title: block.title ?? "Note", preview },
+        data: { title: block.title ?? "Note", preview, importance: block.importance },
       });
       col++;
     } else if (block.type === "todo") {
@@ -210,7 +222,7 @@ function buildInitialLayout(
         id: blockNodeId,
         type: "todoBlock",
         position: { x: baseX, y: baseY },
-        data: { title: block.title ?? "Checklist", count: items.length, done: items.filter((i) => i.completed).length },
+        data: { title: block.title ?? "Checklist", count: items.length, done: items.filter((i) => i.completed).length, importance: block.importance },
       });
       items.forEach((item, idx) => {
         const itemId = `todo-${item.id}`;
@@ -238,7 +250,7 @@ function buildInitialLayout(
         id: blockNodeId,
         type: "calendarBlock",
         position: { x: baseX, y: baseY },
-        data: { title: block.title ?? "Timeline", count: events.length },
+        data: { title: block.title ?? "Timeline", count: events.length, importance: block.importance },
       });
       events.forEach((ev, idx) => {
         const evId = `event-${ev.id}`;
