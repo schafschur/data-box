@@ -8,6 +8,7 @@ import todoItemsRouter from "./todo_items";
 import calendarEventsRouter from "./calendar_events";
 import photosRouter from "./photos";
 import analysisRouter from "./analysis";
+import mapRouter from "./map";
 import searchRouter from "./search";
 
 const router: IRouter = Router();
@@ -21,6 +22,7 @@ router.use(todoItemsRouter);
 router.use(calendarEventsRouter);
 router.use(photosRouter);
 router.use(analysisRouter);
+router.use(mapRouter);
 router.use(searchRouter);
 
 export default router;

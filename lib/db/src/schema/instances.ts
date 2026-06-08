@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { categoriesTable } from "./categories";
@@ -8,6 +8,7 @@ export const instancesTable = pgTable("instances", {
   categoryId: integer("category_id").notNull().references(() => categoriesTable.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description"),
+  mapLayout: jsonb("map_layout"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

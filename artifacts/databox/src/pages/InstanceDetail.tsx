@@ -9,7 +9,8 @@ import { CreateBlockDialog } from "@/components/forms/CreateBlockDialog";
 import { EditInstanceDialog } from "@/components/forms/EditInstanceDialog";
 import { SortableBlockRenderer } from "@/components/blocks/SortableBlockRenderer";
 import { AnalysisPanel } from "@/components/blocks/AnalysisPanel";
-import { Settings, Trash2, Edit, ChevronRight, BarChart2, Layers } from "lucide-react";
+import { MapView } from "@/components/blocks/MapView";
+import { Settings, Trash2, Edit, ChevronRight, BarChart2, Layers, Network } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
@@ -35,7 +36,7 @@ export function InstanceDetail() {
   const queryClient = useQueryClient();
 
   const [editOpen, setEditOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"blocks" | "analysis">("blocks");
+  const [activeTab, setActiveTab] = useState<"blocks" | "analysis" | "map">("blocks");
   const [localBlocks, setLocalBlocks] = useState<Block[]>([]);
 
   const { data: instance, isLoading: isInstanceLoading } = useGetInstance(id, {
@@ -199,11 +200,23 @@ export function InstanceDetail() {
               <BarChart2 className="w-4 h-4" />
               Analysis
             </button>
+            <button
+              onClick={() => setActiveTab("map")}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
+                activeTab === "map"
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Network className="w-4 h-4" />
+              Map
+            </button>
           </div>
         )}
 
         {/* Blocks tab */}
-        <div className={cn(activeTab === "analysis" ? "hidden" : "block")}>
+        <div className={cn(activeTab !== "blocks" ? "hidden" : "block")}>
           {isBlocksLoading ? (
             <div className="space-y-6">
               {[1, 2].map(i => (
@@ -239,6 +252,13 @@ export function InstanceDetail() {
         {hasBlocks && activeTab === "analysis" && (
           <div className="max-w-2xl">
             <AnalysisPanel instanceId={id} />
+          </div>
+        )}
+
+        {/* Map tab */}
+        {hasBlocks && activeTab === "map" && (
+          <div className="w-full rounded-xl overflow-hidden border border-border" style={{ height: "calc(100vh - 280px)", minHeight: 480 }}>
+            <MapView instanceId={id} />
           </div>
         )}
       </div>
