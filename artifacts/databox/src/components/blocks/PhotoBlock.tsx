@@ -368,8 +368,8 @@ function PhotoLightbox({
         />
       </div>
 
-      {/* Info panel */}
-      <div className="flex-shrink-0 bg-[#0a0a0a] border-t border-white/10 px-6 py-4 overflow-y-auto" style={{ maxHeight: 260 }}>
+      {/* Info panel — hidden when zoomed */}
+      <div className={cn("flex-shrink-0 bg-[#0a0a0a] border-t border-white/10 px-6 py-4 overflow-y-auto", zoomed && "hidden")} style={{ maxHeight: 260 }}>
         <div className="max-w-2xl mx-auto">
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
