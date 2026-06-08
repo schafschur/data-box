@@ -241,24 +241,6 @@ export default function CategoryScreen() {
           headerTintColor: colors.foreground,
           headerShadowVisible: false,
           headerTitleStyle: { fontFamily: "Inter_600SemiBold", fontSize: 17 },
-          headerRight: () => (
-            <Pressable
-              onPress={() => setShowModal(true)}
-              style={({ pressed }) => ({
-                width: 36,
-                height: 36,
-                borderRadius: colors.radius,
-                backgroundColor: colors.primary,
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 4,
-                opacity: pressed ? 0.8 : 1,
-              })}
-              testID="new-instance-btn"
-            >
-              <Feather name="plus" size={20} color="#fff" />
-            </Pressable>
-          ),
         }}
       />
       <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -273,20 +255,32 @@ export default function CategoryScreen() {
             ]}
           >
             <View style={styles.heroRow}>
-              <View
-                style={[
-                  styles.dot,
-                  { backgroundColor: category.color ?? colors.primary },
+              <View style={styles.heroLeft}>
+                <View
+                  style={[
+                    styles.dot,
+                    { backgroundColor: category.color ?? colors.primary },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.heroTitle,
+                    { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
+                  {category.name}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setShowModal(true)}
+                style={({ pressed }) => [
+                  styles.addBtn,
+                  { backgroundColor: colors.primary, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
                 ]}
-              />
-              <Text
-                style={[
-                  styles.heroTitle,
-                  { color: colors.foreground, fontFamily: "Inter_700Bold" },
-                ]}
+                testID="new-instance-btn"
               >
-                {category.name}
-              </Text>
+                <Feather name="plus" size={20} color="#fff" />
+              </Pressable>
             </View>
             {category.description ? (
               <Text
@@ -373,9 +367,11 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  heroRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  heroRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  heroLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
   dot: { width: 12, height: 12, borderRadius: 6 },
   heroTitle: { fontSize: 22 },
+  addBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   heroDescription: { fontSize: 14, marginTop: 6, lineHeight: 20 },
   centered: { flex: 1, alignItems: "center", justifyContent: "center" },
   list: { padding: 16 },

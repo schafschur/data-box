@@ -234,24 +234,6 @@ export default function InstanceScreen() {
           headerTintColor: colors.foreground,
           headerShadowVisible: false,
           headerTitleStyle: { fontFamily: "Inter_600SemiBold", fontSize: 17 },
-          headerRight: () => (
-            <Pressable
-              onPress={() => setShowModal(true)}
-              style={({ pressed }) => ({
-                width: 36,
-                height: 36,
-                borderRadius: colors.radius,
-                backgroundColor: colors.primary,
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 4,
-                opacity: pressed ? 0.8 : 1,
-              })}
-              testID="new-block-btn"
-            >
-              <Feather name="plus" size={20} color="#fff" />
-            </Pressable>
-          ),
         }}
       />
       <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -262,11 +244,24 @@ export default function InstanceScreen() {
               { borderBottomColor: colors.border, backgroundColor: colors.background },
             ]}
           >
-            <Text
-              style={[styles.heroTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
-            >
-              {instance.name}
-            </Text>
+            <View style={styles.heroRow}>
+              <Text
+                style={[styles.heroTitle, { color: colors.foreground, fontFamily: "Inter_700Bold", flex: 1 }]}
+                numberOfLines={1}
+              >
+                {instance.name}
+              </Text>
+              <Pressable
+                onPress={() => setShowModal(true)}
+                style={({ pressed }) => [
+                  styles.addBtn,
+                  { backgroundColor: colors.primary, borderRadius: colors.radius, opacity: pressed ? 0.8 : 1 },
+                ]}
+                testID="new-block-btn"
+              >
+                <Feather name="plus" size={20} color="#fff" />
+              </Pressable>
+            </View>
             {instance.description ? (
               <Text
                 style={[
@@ -348,8 +343,10 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  heroRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   heroTitle: { fontSize: 26, letterSpacing: -0.3 },
   heroDescription: { fontSize: 14, marginTop: 6, lineHeight: 20 },
+  addBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   centered: { flex: 1, alignItems: "center", justifyContent: "center" },
   scrollContent: { padding: 16 },
   blockList: { gap: 16 },
