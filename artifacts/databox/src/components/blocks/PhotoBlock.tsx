@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Upload, Loader2, X, ZoomIn, ZoomOut,
-  ChevronLeft, ChevronRight, CalendarDays, LayoutGrid, Tag, Trash2,
+  ChevronLeft, ChevronRight, CalendarDays, LayoutGrid, Tag, Trash2, RotateCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -256,6 +256,7 @@ function PhotoLightbox({
 }) {
   const [idx, setIdx] = useState(initialIdx);
   const [zoomed, setZoomed] = useState(false);
+  const [isRotating, setIsRotating] = useState(false);
   const updatePhoto = useUpdatePhoto();
   const deletePhoto = useDeletePhoto();
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -291,6 +292,19 @@ function PhotoLightbox({
 
   if (!photo) return null;
 
+  async function handleRotate() {
+    setIsRotating(true);
+    try {
+      const res = await fetch(`/api/photos/${photo.id}/rotate`, { method: "POST" });
+      if (!res.ok) throw new Error("Rotate failed");
+      onUpdate();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsRotating(false);
+    }
+  }
+
   function save(field: string, value: string) {
     updatePhoto.mutate(
       { id: photo.id, data: { [field]: value.trim() || null } as Record<string, string | null> },
@@ -321,6 +335,16 @@ function PhotoLightbox({
       <div className="flex-shrink-0 flex items-center justify-between px-5 py-3">
         <span className="text-white/50 text-sm tabular-nums">{idx + 1} / {photos.length}</span>
         <div className="flex items-center gap-1">
+          <button
+            onClick={handleRotate}
+            disabled={isRotating}
+            className="text-white/70 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
+            title="Rotate 90° clockwise"
+          >
+            {isRotating
+              ? <Loader2 className="h-4 w-4 animate-spin" />
+              : <RotateCw className="h-4 w-4" />}
+          </button>
           <button
             onClick={() => setZoomed(z => !z)}
             className="text-white/70 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors"

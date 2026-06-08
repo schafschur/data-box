@@ -125,6 +125,36 @@ router.put("/photos/:id", async (req: Request, res: Response) => {
   res.json(row);
 });
 
+router.post("/photos/:id/rotate", async (req: Request, res: Response) => {
+  const id = parseInt(String(req.params.id), 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [photo] = await db.select().from(photosTable).where(eq(photosTable.id, id));
+  if (!photo) { res.status(404).json({ error: "Photo not found" }); return; }
+
+  try {
+    const file = await objectStorageService.getObjectEntityFile(photo.objectPath);
+    const [buffer] = await file.download();
+    const [metadata] = await file.getMetadata();
+    const contentType = (metadata.contentType as string) || "image/jpeg";
+
+    const rotated = await sharp(buffer).rotate(90).toBuffer();
+
+    await file.save(rotated, { metadata: { contentType } });
+
+    const [updated] = await db
+      .update(photosTable)
+      .set({ updatedAt: new Date() })
+      .where(eq(photosTable.id, id))
+      .returning();
+
+    res.json(updated);
+  } catch (err) {
+    console.error("Rotate error:", err);
+    res.status(500).json({ error: "Rotate failed" });
+  }
+});
+
 router.delete("/photos/:id", async (req: Request, res: Response) => {
   const { id } = DeletePhotoParams.parse(req.params);
   await db.delete(photosTable).where(eq(photosTable.id, id));
