@@ -536,38 +536,74 @@ export const GetInstanceAnalysisResponse = zod.object({
   "instanceId": zod.number(),
   "totalBlocks": zod.number(),
   "textStats": zod.object({
-  "blockCount": zod.number(),
-  "totalWordCount": zod.number(),
-  "topKeywords": zod.array(zod.object({
-  "word": zod.string(),
-  "count": zod.number()
-}))
-}),
+    "blockCount": zod.number(),
+    "totalWordCount": zod.number(),
+    "topKeywords": zod.array(zod.object({
+      "word": zod.string(),
+      "count": zod.number()
+    }))
+  }),
   "todoStats": zod.object({
-  "blockCount": zod.number(),
-  "totalItems": zod.number(),
-  "completedItems": zod.number(),
-  "completionRate": zod.number()
-}),
+    "blockCount": zod.number(),
+    "totalItems": zod.number(),
+    "completedItems": zod.number(),
+    "completionRate": zod.number()
+  }),
   "calendarStats": zod.object({
-  "blockCount": zod.number(),
-  "totalEvents": zod.number(),
-  "upcomingEvents": zod.number(),
-  "overdueEvents": zod.number(),
-  "nextEvent": zod.union([zod.object({
-  "id": zod.number(),
-  "blockId": zod.number(),
-  "title": zod.string(),
-  "date": zod.coerce.date(),
-  "description": zod.string().nullish(),
-  "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
-}),zod.null()]).optional()
-}),
+    "blockCount": zod.number(),
+    "totalEvents": zod.number(),
+    "upcomingEvents": zod.number(),
+    "overdueEvents": zod.number(),
+    "nextEvent": zod.union([zod.object({
+      "id": zod.number(),
+      "blockId": zod.number(),
+      "title": zod.string(),
+      "date": zod.string(),
+      "description": zod.string().nullish(),
+      "createdAt": zod.coerce.date(),
+      "updatedAt": zod.coerce.date()
+    }), zod.null()]).optional()
+  }),
   "photoStats": zod.object({
-  "blockCount": zod.number(),
-  "totalPhotos": zod.number()
-})
+    "blockCount": zod.number(),
+    "totalPhotos": zod.number(),
+    "withCaption": zod.number().optional(),
+    "withNotes": zod.number().optional(),
+    "withDate": zod.number().optional(),
+    "earliestDate": zod.string().nullable().optional(),
+    "latestDate": zod.string().nullable().optional(),
+    "byMonth": zod.array(zod.object({
+      "month": zod.string(),
+      "count": zod.number()
+    })).optional()
+  }),
+  "blockComposition": zod.array(zod.object({
+    "type": zod.string(),
+    "label": zod.string(),
+    "count": zod.number()
+  })),
+  "upcomingEventsList": zod.array(zod.object({
+    "id": zod.number(),
+    "title": zod.string(),
+    "date": zod.string(),
+    "description": zod.string().nullable().optional(),
+    "blockTitle": zod.string().nullable().optional()
+  })),
+  "activityStats": zod.array(zod.object({
+    "type": zod.string(),
+    "label": zod.string(),
+    "blockCount": zod.number(),
+    "lastUpdated": zod.string()
+  })),
+  "overdueStats": zod.object({
+    "count": zod.number(),
+    "items": zod.array(zod.object({
+      "id": zod.number(),
+      "text": zod.string(),
+      "blockTitle": zod.string().nullable().optional(),
+      "daysOld": zod.number()
+    }))
+  })
 })
 
 

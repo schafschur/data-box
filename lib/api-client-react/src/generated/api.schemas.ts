@@ -291,6 +291,39 @@ export interface PhotoStats {
   byMonth: PhotoMonthCount[];
 }
 
+export interface BlockCompositionEntry {
+  type: string;
+  label: string;
+  count: number;
+}
+
+export interface CalendarEventSummary {
+  id: number;
+  title: string;
+  date: string;
+  description?: string | null;
+  blockTitle?: string | null;
+}
+
+export interface ActivityEntry {
+  type: string;
+  label: string;
+  blockCount: number;
+  lastUpdated: string;
+}
+
+export interface OverdueTodoItem {
+  id: number;
+  text: string;
+  blockTitle?: string | null;
+  daysOld: number;
+}
+
+export interface OverdueStats {
+  count: number;
+  items: OverdueTodoItem[];
+}
+
 export interface InstanceAnalysis {
   instanceId: number;
   totalBlocks: number;
@@ -298,6 +331,10 @@ export interface InstanceAnalysis {
   todoStats: TodoStats;
   calendarStats: CalendarStats;
   photoStats: PhotoStats;
+  blockComposition: BlockCompositionEntry[];
+  upcomingEventsList: CalendarEventSummary[];
+  activityStats: ActivityEntry[];
+  overdueStats: OverdueStats;
 }
 
 export interface UploadUrlRequest {
