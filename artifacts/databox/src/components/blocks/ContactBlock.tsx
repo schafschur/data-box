@@ -469,12 +469,6 @@ function SortableCard({
   );
 }
 
-const COL_CLASSES: Record<number, string> = {
-  1: "grid-cols-1",
-  2: "grid-cols-1 sm:grid-cols-2",
-  3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
-  4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
-};
 
 export function ContactBlock({ block }: { block: Block }) {
   const queryClient = useQueryClient();
@@ -533,8 +527,6 @@ export function ContactBlock({ block }: { block: Block }) {
     );
   };
 
-  const colClass = COL_CLASSES[userCols] ?? COL_CLASSES[2];
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-end gap-1">
@@ -566,7 +558,7 @@ export function ContactBlock({ block }: { block: Block }) {
             items={sortedCards.map((c) => c.id)}
             strategy={rectSortingStrategy}
           >
-            <div className={cn("grid gap-4", colClass)}>
+            <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${userCols}, minmax(0, 1fr))` }}>
               {sortedCards.map((card) => (
                 <SortableCard
                   key={card.id}
