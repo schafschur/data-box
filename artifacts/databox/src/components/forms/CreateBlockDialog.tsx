@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
@@ -28,6 +28,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const schema = z.object({
   title: z.string().optional(),
   type: z.enum(["richtext", "todo", "calendar", "photo"]),
+}).superRefine((data, ctx) => {
+  if (data.type === "photo" && !data.title?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Category name is required for photo blocks",
+      path: ["title"],
+    });
+  }
 });
 
 export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
@@ -42,6 +50,9 @@ export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
       type: "richtext",
     },
   });
+
+  const selectedType = useWatch({ control: form.control, name: "type" });
+  const isPhoto = selectedType === "photo";
 
   const onSubmit = (data: z.infer<typeof schema>) => {
     createBlock.mutate(
@@ -68,7 +79,9 @@ export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl">Add Block</DialogTitle>
           <DialogDescription>
-            Add a new section to your instance.
+            {isPhoto
+              ? "Each photo block is a category. Photos you upload will be tagged with this category automatically."
+              : "Add a new section to your instance."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -79,7 +92,14 @@ export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Type</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={(val) => {
+                      field.onChange(val);
+                      form.setValue("title", "");
+                      form.clearErrors("title");
+                    }}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a block type" />
@@ -101,9 +121,15 @@ export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Title (Optional)</FormLabel>
+                  <FormLabel>
+                    {isPhoto ? "Category Name" : "Title"}
+                    {!isPhoto && <span className="text-muted-foreground font-normal ml-1">(Optional)</span>}
+                  </FormLabel>
                   <FormControl>
-                    <Input placeholder="Block title" {...field} />
+                    <Input
+                      placeholder={isPhoto ? "e.g. Vacation, Work, Family…" : "Block title"}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -111,7 +137,7 @@ export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
             />
             <div className="flex justify-end pt-4">
               <Button type="submit" disabled={createBlock.isPending}>
-                Create Block
+                {isPhoto ? "Create Photo Block" : "Create Block"}
               </Button>
             </div>
           </form>

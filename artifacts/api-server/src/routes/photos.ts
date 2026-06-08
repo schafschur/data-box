@@ -4,7 +4,7 @@ import multer from "multer";
 import { randomUUID } from "crypto";
 import sharp from "sharp";
 import { db } from "@workspace/db";
-import { photosTable } from "@workspace/db";
+import { photosTable, blocksTable } from "@workspace/db";
 import {
   ListPhotosParams,
   AddPhotoParams,
@@ -73,8 +73,12 @@ router.post("/blocks/:blockId/photos/upload", upload.single("file"), async (req:
       ? req.body.caption.trim() : null;
     const notes = typeof req.body.notes === "string" && req.body.notes.trim()
       ? req.body.notes.trim() : null;
+
+    // Auto-assign category from block title; allow explicit override via body
+    const [block] = await db.select().from(blocksTable).where(eq(blocksTable.id, blockId));
+    const blockCategory = block?.title?.trim() || null;
     const photoCategory = typeof req.body.photoCategory === "string" && req.body.photoCategory.trim()
-      ? req.body.photoCategory.trim() : null;
+      ? req.body.photoCategory.trim() : blockCategory;
 
     const [row] = await db
       .insert(photosTable)
