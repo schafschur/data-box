@@ -387,6 +387,7 @@ export const ListCalendarEventsResponseItem = zod.object({
   "title": zod.string(),
   "date": zod.coerce.date(),
   "description": zod.string().nullish(),
+  "highPriority": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -417,7 +418,8 @@ export const UpdateCalendarEventParams = zod.object({
 export const UpdateCalendarEventBody = zod.object({
   "title": zod.string(),
   "date": zod.coerce.date(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "highPriority": zod.boolean().optional()
 })
 
 export const UpdateCalendarEventResponse = zod.object({
@@ -426,6 +428,7 @@ export const UpdateCalendarEventResponse = zod.object({
   "title": zod.string(),
   "date": zod.coerce.date(),
   "description": zod.string().nullish(),
+  "highPriority": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })

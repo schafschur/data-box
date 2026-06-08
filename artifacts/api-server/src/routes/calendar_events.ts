@@ -56,6 +56,7 @@ router.put("/calendar-events/:id", async (req: Request, res: Response) => {
       title: parsed.data.title,
       date: dateStr,
       description: parsed.data.description,
+      ...(parsed.data.highPriority !== undefined ? { highPriority: parsed.data.highPriority } : {}),
       updatedAt: new Date(),
     })
     .where(eq(calendarEventsTable.id, id))

@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, date, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, date, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { blocksTable } from "./blocks";
@@ -9,6 +9,7 @@ export const calendarEventsTable = pgTable("calendar_events", {
   title: text("title").notNull(),
   date: date("date").notNull(),
   description: text("description"),
+  highPriority: boolean("high_priority").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

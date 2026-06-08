@@ -194,6 +194,7 @@ export interface CalendarEvent {
   date: string;
   /** @nullable */
   description?: string | null;
+  highPriority?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -203,6 +204,7 @@ export interface CalendarEventInput {
   date: string;
   /** @nullable */
   description?: string | null;
+  highPriority?: boolean;
 }
 
 export interface Photo {
