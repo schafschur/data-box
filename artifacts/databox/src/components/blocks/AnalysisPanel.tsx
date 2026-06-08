@@ -66,10 +66,16 @@ export function AnalysisPanel({ instanceId }: { instanceId: number }) {
     count: k.count,
   }));
 
-  const monthData = photoStats.byMonth.map(m => ({
+  const monthData = (photoStats.byMonth ?? []).map(m => ({
     name: formatMonth(m.month),
     count: m.count,
   }));
+
+  const withCaption = photoStats.withCaption ?? 0;
+  const withNotes = photoStats.withNotes ?? 0;
+  const withDate = photoStats.withDate ?? 0;
+  const earliestDate = photoStats.earliestDate ?? null;
+  const latestDate = photoStats.latestDate ?? null;
 
   const hasPhotoBlock = photoStats.blockCount > 0;
   const hasPhotos = photoStats.totalPhotos > 0;
@@ -196,11 +202,11 @@ export function AnalysisPanel({ instanceId }: { instanceId: number }) {
           <CardHeader className="p-4 pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-muted-foreground">Photo Metadata</CardTitle>
-              {photoStats.earliestDate && (
+              {earliestDate && (
                 <span className="text-xs text-muted-foreground">
-                  {formatDate(photoStats.earliestDate)}
-                  {photoStats.latestDate && photoStats.latestDate !== photoStats.earliestDate && (
-                    <> → {formatDate(photoStats.latestDate)}</>
+                  {formatDate(earliestDate)}
+                  {latestDate && latestDate !== earliestDate && (
+                    <> → {formatDate(latestDate)}</>
                   )}
                 </span>
               )}
@@ -210,19 +216,19 @@ export function AnalysisPanel({ instanceId }: { instanceId: number }) {
             <MetadataRow
               label="With caption"
               icon={MessageSquare}
-              value={photoStats.withCaption}
+              value={withCaption}
               total={photoStats.totalPhotos}
             />
             <MetadataRow
               label="With notes"
               icon={StickyNote}
-              value={photoStats.withNotes}
+              value={withNotes}
               total={photoStats.totalPhotos}
             />
             <MetadataRow
               label="With date"
               icon={CalendarDays}
-              value={photoStats.withDate}
+              value={withDate}
               total={photoStats.totalPhotos}
             />
           </CardContent>
