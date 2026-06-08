@@ -113,7 +113,6 @@ function CalendarView({
       {groups.map(({ dateStr, items }) => {
         const date = parseISO(dateStr);
         const isDateToday = isToday(date);
-        const isDatePast = isPast(date) && !isDateToday;
 
         return (
           <div
@@ -123,7 +122,6 @@ function CalendarView({
               isDateToday
                 ? "bg-primary/5 border-primary/20 shadow-sm"
                 : "bg-card hover:border-primary/30",
-              isDatePast && "opacity-70"
             )}
           >
             <div className={cn(
