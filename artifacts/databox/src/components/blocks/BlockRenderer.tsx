@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Block, useDeleteBlock, useUpdateBlock, getListBlocksQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Trash2, GripVertical, FileText, CheckSquare, Calendar, Image as ImageIcon, Check, Flame } from "lucide-react";
@@ -8,7 +8,6 @@ import { CalendarBlock } from "./CalendarBlock";
 import { PhotoBlock } from "./PhotoBlock";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
 import type { DraggableAttributes } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
@@ -20,18 +19,13 @@ const ICONS = {
   photo: ImageIcon,
 };
 
-const IMPORTANCE_COLORS: Record<number, string> = {
-  1:  "bg-slate-100 text-slate-500 border-slate-200",
-  2:  "bg-slate-100 text-slate-500 border-slate-200",
-  3:  "bg-blue-50 text-blue-500 border-blue-200",
-  4:  "bg-blue-50 text-blue-500 border-blue-200",
-  5:  "bg-teal-50 text-teal-600 border-teal-200",
-  6:  "bg-teal-50 text-teal-600 border-teal-200",
-  7:  "bg-amber-50 text-amber-600 border-amber-200",
-  8:  "bg-amber-50 text-amber-600 border-amber-200",
-  9:  "bg-coral-50 text-accent border-accent/30",
-  10: "bg-coral-50 text-accent border-accent/30",
-};
+function importanceBadgeClass(imp: number): string {
+  if (imp <= 2) return "bg-slate-100 text-slate-500 border-slate-200";
+  if (imp <= 4) return "bg-blue-50 text-blue-500 border-blue-200";
+  if (imp <= 6) return "bg-teal-50 text-teal-600 border-teal-200";
+  if (imp <= 8) return "bg-amber-50 text-amber-600 border-amber-200";
+  return "bg-orange-50 text-orange-500 border-orange-200";
+}
 
 interface BlockRendererProps {
   block: Block;
@@ -43,12 +37,25 @@ interface BlockRendererProps {
 export function BlockRenderer({ block, dragHandleRef, dragHandleAttributes, dragHandleListeners }: BlockRendererProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [title, setTitle] = useState(block.title || "");
-  const [importanceOpen, setImportanceOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const deleteBlock = useDeleteBlock();
   const updateBlock = useUpdateBlock();
 
   const Icon = ICONS[block.type];
+
+  // Close picker when clicking outside
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [pickerOpen]);
 
   const handleDelete = () => {
     if (confirm("Are you sure you want to delete this block?")) {
@@ -81,22 +88,22 @@ export function BlockRenderer({ block, dragHandleRef, dragHandleAttributes, drag
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListBlocksQueryKey(block.instanceId) });
-          setImportanceOpen(false);
+          setPickerOpen(false);
         }
       }
     );
   };
 
   const imp = block.importance;
-  const impColorClass = imp ? IMPORTANCE_COLORS[imp] : "";
+  const badgeClass = imp ? importanceBadgeClass(imp) : "";
 
   return (
-    <div className="group relative bg-card rounded-xl shadow-sm border border-card-border overflow-hidden transition-shadow hover:shadow-md">
+    <div className="group relative bg-card rounded-xl shadow-sm border border-card-border overflow-visible transition-shadow hover:shadow-md">
       <div
         ref={dragHandleRef}
         {...dragHandleAttributes}
         {...dragHandleListeners}
-        className="absolute left-0 top-0 bottom-0 w-8 bg-muted/30 flex items-start justify-center pt-4 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing touch-none"
+        className="absolute left-0 top-0 bottom-0 w-8 bg-muted/30 flex items-start justify-center pt-4 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing touch-none rounded-l-xl"
       >
         <GripVertical className="w-4 h-4 text-muted-foreground" />
       </div>
@@ -131,51 +138,53 @@ export function BlockRenderer({ block, dragHandleRef, dragHandleAttributes, drag
           </div>
 
           <div className="flex items-center gap-2 shrink-0 ml-3">
-            {/* Importance badge + picker */}
-            <Popover open={importanceOpen} onOpenChange={setImportanceOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "h-7 px-2 gap-1 text-xs border transition-opacity",
-                    imp
-                      ? cn(impColorClass, "opacity-100")
-                      : "opacity-0 group-hover:opacity-100 text-muted-foreground border-border"
-                  )}
-                >
-                  <Flame className="w-3 h-3" />
-                  {imp ?? "—"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-3" align="end">
-                <p className="text-xs text-muted-foreground mb-2 font-medium">Importance (1 = minor, 10 = essential)</p>
-                <div className="flex gap-1">
-                  {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                    <button
-                      key={n}
-                      onClick={() => handleSetImportance(n === imp ? null : n)}
-                      className={cn(
-                        "w-7 h-7 rounded text-xs font-semibold border transition-all",
-                        n === imp
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background text-muted-foreground border-border hover:border-primary hover:text-primary"
-                      )}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-                {imp && (
-                  <button
-                    onClick={() => handleSetImportance(null)}
-                    className="mt-2 text-xs text-muted-foreground hover:text-destructive w-full text-center"
-                  >
-                    Clear
-                  </button>
+            {/* Importance badge + custom picker */}
+            <div ref={pickerRef} className="relative">
+              <button
+                onClick={() => setPickerOpen((o) => !o)}
+                className={cn(
+                  "h-7 px-2 gap-1 text-xs border rounded-md flex items-center transition-opacity",
+                  imp
+                    ? cn(badgeClass, "opacity-100")
+                    : "opacity-0 group-hover:opacity-100 text-muted-foreground border-border bg-transparent hover:bg-muted/40"
                 )}
-              </PopoverContent>
-            </Popover>
+              >
+                <Flame className="w-3 h-3" />
+                {imp ?? "—"}
+              </button>
+
+              {pickerOpen && (
+                <div className="absolute right-0 top-9 z-50 bg-popover border border-border rounded-lg shadow-lg p-3 min-w-max">
+                  <p className="text-xs text-muted-foreground mb-2 font-medium">
+                    Importance — 1 minor · 10 essential
+                  </p>
+                  <div className="flex gap-1">
+                    {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                      <button
+                        key={n}
+                        onClick={() => handleSetImportance(n === imp ? null : n)}
+                        className={cn(
+                          "w-7 h-7 rounded text-xs font-semibold border transition-all",
+                          n === imp
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background text-muted-foreground border-border hover:border-primary hover:text-primary"
+                        )}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  {imp && (
+                    <button
+                      onClick={() => handleSetImportance(null)}
+                      className="mt-2 text-xs text-muted-foreground hover:text-destructive w-full text-center"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
 
             <Button
               variant="ghost"
