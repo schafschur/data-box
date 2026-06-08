@@ -1,8 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { format, isToday, isPast, parseISO } from "date-fns";
-import { Flame, CalendarDays, ChevronRight } from "lucide-react";
+import {
+  format, isToday, isPast, parseISO, isSameMonth, isSameDay,
+  startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, addDays,
+} from "date-fns";
+import { Flame, CalendarDays, ChevronRight, AlignLeft, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -21,7 +24,8 @@ interface CalendarEntry {
   categoryColor: string | null;
 }
 
-type ViewMode = "all" | "upcoming" | "past";
+type RangeMode    = "all" | "upcoming" | "past";
+type DisplayMode  = "timeline" | "grid";
 
 function hexWithOpacity(hex: string | null, opacity: number): string {
   if (!hex) return `rgba(100,100,100,${opacity})`;
@@ -31,40 +35,30 @@ function hexWithOpacity(hex: string | null, opacity: number): string {
   return `rgba(${r},${g},${b},${opacity})`;
 }
 
-function EventCard({ event }: { event: CalendarEntry }) {
+/* ── Timeline event card ──────────────────────────────────────────── */
+function TimelineEventCard({ event }: { event: CalendarEntry }) {
   const [, setLocation] = useLocation();
-  const eventDate = parseISO(event.date);
+  const eventDate   = parseISO(event.date);
   const isEventToday = isToday(eventDate);
-  const isEventPast = isPast(eventDate) && !isEventToday;
-  const isPriority = event.highPriority;
-  const color = event.categoryColor || "#6b7280";
-
-  const handleClick = () => setLocation(`/instances/${event.instanceId}`);
+  const isEventPast  = isPast(eventDate) && !isEventToday;
+  const isPriority   = event.highPriority;
+  const color        = event.categoryColor || "#6b7280";
 
   return (
     <button
-      onClick={handleClick}
+      onClick={() => setLocation(`/instances/${event.instanceId}`)}
       className={cn(
         "w-full text-left flex items-start gap-4 p-4 rounded-xl border transition-all group",
-        isPriority && [
-          "bg-gradient-to-r from-orange-50 via-amber-50/50 to-transparent",
-          "border-orange-300 shadow-sm shadow-orange-100",
-        ],
+        isPriority && "bg-gradient-to-r from-orange-50 via-amber-50/50 to-transparent border-orange-300 shadow-sm shadow-orange-100",
         !isPriority && isEventToday && "bg-primary/5 border-primary/20 shadow-sm",
         !isPriority && !isEventToday && "bg-card border-border hover:border-border/80",
         isEventPast && !isPriority && "opacity-55",
-        isEventPast && isPriority && "opacity-70",
+        isEventPast && isPriority  && "opacity-70",
         "hover:shadow-md hover:-translate-y-px",
       )}
       style={
         !isPriority
-          ? {
-              borderLeftColor: color,
-              borderLeftWidth: 3,
-              boxShadow: isEventToday
-                ? `0 1px 3px 0 ${hexWithOpacity(color, 0.2)}`
-                : undefined,
-            }
+          ? { borderLeftColor: color, borderLeftWidth: 3, boxShadow: isEventToday ? `0 1px 3px 0 ${hexWithOpacity(color, 0.2)}` : undefined }
           : { borderLeftWidth: 3, borderLeftColor: "rgb(249,115,22)" }
       }
     >
@@ -74,88 +68,213 @@ function EventCard({ event }: { event: CalendarEntry }) {
         style={
           isPriority
             ? { background: "linear-gradient(to bottom, #f97316, #ef4444)" }
-            : { backgroundColor: isEventToday ? color : color, opacity: isEventPast ? 0.6 : 1 }
+            : { backgroundColor: color, opacity: isEventPast ? 0.6 : 1 }
         }
       >
-        <span className="text-[10px] uppercase font-semibold tracking-wide leading-none mb-0.5">
-          {format(eventDate, "MMM")}
-        </span>
+        <span className="text-[10px] uppercase font-semibold tracking-wide leading-none mb-0.5">{format(eventDate, "MMM")}</span>
         <span className="text-xl font-serif leading-none">{format(eventDate, "d")}</span>
-        <span className="text-[10px] uppercase font-medium tracking-wide leading-none mt-0.5 opacity-80">
-          {format(eventDate, "EEE")}
-        </span>
+        <span className="text-[10px] uppercase font-medium tracking-wide leading-none mt-0.5 opacity-80">{format(eventDate, "EEE")}</span>
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0 pt-0.5">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={cn(
-            "font-medium text-sm leading-snug",
-            isPriority && "font-bold text-orange-900",
-          )}>
+          <span className={cn("font-medium text-sm leading-snug", isPriority && "font-bold text-orange-900")}>
             {event.title}
           </span>
           {isPriority && (
             <span className="inline-flex items-center gap-0.5 text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-gradient-to-r from-orange-500 to-red-500 text-white shrink-0">
-              <Flame className="w-2.5 h-2.5" />
-              Priority
+              <Flame className="w-2.5 h-2.5" /> Priority
             </span>
           )}
           {isEventToday && (
-            <span className={cn(
-              "text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded shrink-0",
-              isPriority ? "bg-orange-100 text-orange-700" : "bg-primary/15 text-primary",
-            )}>
+            <span className={cn("text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded shrink-0", isPriority ? "bg-orange-100 text-orange-700" : "bg-primary/15 text-primary")}>
               Today
             </span>
           )}
         </div>
-
-        {/* Breadcrumb */}
         <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-          <span
-            className="inline-block w-2 h-2 rounded-full shrink-0"
-            style={{ backgroundColor: color }}
-          />
+          <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
           <span className="font-medium" style={{ color }}>{event.categoryName}</span>
           <ChevronRight className="w-3 h-3 opacity-40" />
           <span className="truncate">{event.instanceName}</span>
         </div>
-
         {event.description && (
-          <p className={cn(
-            "text-xs mt-1.5 line-clamp-2 leading-relaxed",
-            isPriority ? "text-orange-700/60" : "text-muted-foreground",
-          )}>
+          <p className={cn("text-xs mt-1.5 line-clamp-2 leading-relaxed", isPriority ? "text-orange-700/60" : "text-muted-foreground")}>
             {event.description}
           </p>
         )}
       </div>
-
-      {/* Arrow hint on hover */}
       <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-muted-foreground/60 shrink-0 mt-2 transition-colors" />
     </button>
   );
 }
 
+/* ── Grid: compact event pill inside a day cell ───────────────────── */
+function GridEventItem({ event }: { event: CalendarEntry }) {
+  const [, setLocation] = useLocation();
+  const isPriority = event.highPriority;
+  const color      = event.categoryColor || "#6b7280";
+
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); setLocation(`/instances/${event.instanceId}`); }}
+      title={`${event.title} · ${event.categoryName} › ${event.instanceName}`}
+      className={cn(
+        "w-full text-left text-[11px] leading-tight px-1.5 py-1 rounded flex items-center gap-1 transition-all",
+        isPriority
+          ? "bg-orange-50 border border-orange-200 text-orange-900 hover:bg-orange-100"
+          : "hover:bg-muted/80 text-foreground",
+      )}
+      style={
+        isPriority
+          ? undefined
+          : { borderLeft: `2px solid ${color}`, paddingLeft: "5px" }
+      }
+    >
+      {isPriority
+        ? <Flame className="w-2.5 h-2.5 text-orange-500 fill-orange-400 shrink-0" />
+        : <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+      }
+      <span className="truncate font-medium">{event.title}</span>
+    </button>
+  );
+}
+
+/* ── Grid: one week row (7-column card) ───────────────────────────── */
+function WeekRow({ weekStart, monthDate, eventsByDate }: {
+  weekStart: Date;
+  monthDate: Date;
+  eventsByDate: Map<string, CalendarEntry[]>;
+}) {
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+
+  return (
+    <div className="grid grid-cols-7 border border-border rounded-xl overflow-hidden bg-card shadow-sm">
+      {days.map((day, idx) => {
+        const dayKey       = format(day, "yyyy-MM-dd");
+        const inMonth      = isSameMonth(day, monthDate);
+        const todayFlag    = isToday(day);
+        const pastFlag     = isPast(day) && !todayFlag;
+        const dayEvents    = eventsByDate.get(dayKey) ?? [];
+        const isLastCol    = idx === 6;
+
+        return (
+          <div
+            key={dayKey}
+            className={cn(
+              "min-h-[90px] flex flex-col p-1.5 gap-1 transition-colors",
+              !isLastCol && "border-r border-border",
+              !inMonth   && "bg-muted/20",
+              todayFlag  && "bg-primary/5",
+              pastFlag && inMonth && "opacity-60",
+            )}
+          >
+            {/* Day header */}
+            <div className={cn(
+              "flex flex-col items-center justify-center rounded-md py-0.5 mb-0.5",
+              todayFlag && "bg-primary text-primary-foreground",
+              !todayFlag && !inMonth && "opacity-40",
+            )}>
+              <span className={cn(
+                "text-[9px] uppercase font-semibold tracking-wider leading-none",
+                todayFlag ? "text-primary-foreground/80" : "text-muted-foreground",
+              )}>
+                {format(day, "EEE")}
+              </span>
+              <span className={cn(
+                "text-sm font-serif leading-tight",
+                todayFlag ? "text-primary-foreground font-bold" : inMonth ? "text-foreground" : "text-muted-foreground",
+              )}>
+                {format(day, "d")}
+              </span>
+            </div>
+
+            {/* Events */}
+            <div className="flex flex-col gap-0.5 flex-1">
+              {dayEvents.map((ev) => (
+                <GridEventItem key={ev.id} event={ev} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Grid: full month section ─────────────────────────────────────── */
+function MonthGrid({ monthKey, events, isCurrentMonth, todayRef }: {
+  monthKey: string;
+  events: CalendarEntry[];
+  isCurrentMonth: boolean;
+  todayRef?: React.RefObject<HTMLDivElement>;
+}) {
+  const monthDate = new Date(monthKey + "-01");
+  const monthStart = startOfMonth(monthDate);
+  const monthEnd   = endOfMonth(monthDate);
+
+  // Week starts on Monday
+  const firstWeekStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const lastWeekEnd    = endOfWeek(monthEnd,   { weekStartsOn: 1 });
+
+  const allDays = eachDayOfInterval({ start: firstWeekStart, end: lastWeekEnd });
+  const weeks: Date[] = [];
+  for (let i = 0; i < allDays.length; i += 7) weeks.push(allDays[i]);
+
+  // Index events by date string
+  const eventsByDate = new Map<string, CalendarEntry[]>();
+  for (const ev of events) {
+    if (!eventsByDate.has(ev.date)) eventsByDate.set(ev.date, []);
+    eventsByDate.get(ev.date)!.push(ev);
+  }
+
+  return (
+    <section>
+      <div
+        ref={isCurrentMonth ? todayRef : undefined}
+        className="flex items-center gap-3 mb-4"
+      >
+        <h2 className={cn("text-sm font-bold uppercase tracking-widest", isCurrentMonth ? "text-primary" : "text-muted-foreground")}>
+          {format(monthDate, "MMMM yyyy")}
+        </h2>
+        {isCurrentMonth && (
+          <span className="text-[10px] font-bold uppercase tracking-wider bg-primary/15 text-primary px-2 py-0.5 rounded">Current</span>
+        )}
+        <div className="flex-1 h-px bg-border" />
+        <span className="text-xs text-muted-foreground">{events.length} event{events.length !== 1 ? "s" : ""}</span>
+      </div>
+
+      <div className="space-y-2">
+        {weeks.map((weekStart) => (
+          <WeekRow
+            key={format(weekStart, "yyyy-MM-dd")}
+            weekStart={weekStart}
+            monthDate={monthDate}
+            eventsByDate={eventsByDate}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ── Main page ────────────────────────────────────────────────────── */
 export function CalendarPage() {
-  const [events, setEvents] = useState<CalendarEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<ViewMode>("all");
+  const [events, setEvents]               = useState<CalendarEntry[]>([]);
+  const [loading, setLoading]             = useState(true);
+  const [rangeMode, setRangeMode]         = useState<RangeMode>("all");
+  const [displayMode, setDisplayMode]     = useState<DisplayMode>("timeline");
   const [activeCategoryIds, setActiveCategoryIds] = useState<Set<number> | null>(null);
   const todayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch(`${BASE_URL}/api/all-calendar-events`)
       .then((r) => r.json())
-      .then((data: CalendarEntry[]) => {
-        setEvents(data);
-        setLoading(false);
-      })
+      .then((data: CalendarEntry[]) => { setEvents(data); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
 
-  // Build category list from events
   const categories = Array.from(
     new Map(events.map((e) => [e.categoryId, { id: e.categoryId, name: e.categoryName, color: e.categoryColor }])).values()
   ).sort((a, b) => a.name.localeCompare(b.name));
@@ -163,68 +282,60 @@ export function CalendarPage() {
   const toggleCategory = (id: number) => {
     setActiveCategoryIds((prev) => {
       const all = new Set(categories.map((c) => c.id));
-      if (prev === null) {
-        // currently showing all → deselect this one
-        const next = new Set(all);
-        next.delete(id);
-        return next;
-      }
+      if (prev === null) { const next = new Set(all); next.delete(id); return next; }
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-        if (next.size === 0) return all; // re-select all if none left
-      } else {
-        next.add(id);
-        if (next.size === all.size) return null; // all selected = null
-      }
+      if (next.has(id)) { next.delete(id); if (next.size === 0) return all; }
+      else { next.add(id); if (next.size === all.size) return null; }
       return next;
     });
   };
 
-  const isAllCategories = activeCategoryIds === null;
-
-  // Filter
   const todayStr = new Date().toISOString().split("T")[0];
+  const todayMonthKey = todayStr.slice(0, 7);
+
   const filtered = events.filter((e) => {
     if (activeCategoryIds !== null && !activeCategoryIds.has(e.categoryId)) return false;
-    if (viewMode === "upcoming") return e.date >= todayStr;
-    if (viewMode === "past")     return e.date < todayStr;
+    if (rangeMode === "upcoming") return e.date >= todayStr;
+    if (rangeMode === "past")     return e.date < todayStr;
     return true;
   });
 
-  // Group by "MMMM yyyy"
-  const grouped = new Map<string, CalendarEntry[]>();
+  // Group by "yyyy-MM" (sortable, parseable)
+  const groupedByMonth = new Map<string, CalendarEntry[]>();
   for (const ev of filtered) {
-    const key = format(parseISO(ev.date), "MMMM yyyy");
-    if (!grouped.has(key)) grouped.set(key, []);
-    grouped.get(key)!.push(ev);
+    const key = ev.date.slice(0, 7);
+    if (!groupedByMonth.has(key)) groupedByMonth.set(key, []);
+    groupedByMonth.get(key)!.push(ev);
   }
 
-  const todayMonthKey = format(new Date(), "MMMM yyyy");
+  // For timeline view, also group by display label
+  const timelineGrouped = new Map<string, CalendarEntry[]>();
+  for (const [key, evs] of groupedByMonth) {
+    const label = format(new Date(key + "-01"), "MMMM yyyy");
+    timelineGrouped.set(label, evs);
+  }
 
-  // Scroll to today on first load
   useEffect(() => {
-    if (!loading && viewMode === "all") {
+    if (!loading && rangeMode === "all") {
       setTimeout(() => todayRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     }
-  }, [loading]);
+  }, [loading, displayMode]);
 
   const priorityCount = events.filter((e) => e.highPriority).length;
+  const isAllCategories = activeCategoryIds === null;
 
   return (
     <AppLayout>
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out pb-20">
 
         {/* Header */}
-        <div className="flex items-start justify-between mb-8 border-b pb-6">
+        <div className="flex items-start justify-between mb-6 border-b pb-6">
           <div>
             <h1 className="text-4xl font-serif tracking-tight text-foreground flex items-center gap-3">
               <CalendarDays className="w-8 h-8 text-primary" />
               Calendar
             </h1>
-            <p className="text-muted-foreground text-lg mt-2">
-              All events across your workspace
-            </p>
+            <p className="text-muted-foreground text-lg mt-2">All events across your workspace</p>
           </div>
           {priorityCount > 0 && (
             <div className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 text-sm text-orange-700 font-medium">
@@ -234,22 +345,51 @@ export function CalendarPage() {
           )}
         </div>
 
-        {/* View mode tabs */}
-        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 w-fit mb-5">
-          {(["all", "upcoming", "past"] as ViewMode[]).map((mode) => (
+        {/* Controls row */}
+        <div className="flex items-center gap-3 flex-wrap mb-5">
+
+          {/* Display mode toggle */}
+          <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
             <button
-              key={mode}
-              onClick={() => setViewMode(mode)}
+              onClick={() => setDisplayMode("timeline")}
               className={cn(
-                "px-4 py-1.5 rounded-md text-sm font-medium transition-colors capitalize",
-                viewMode === mode
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                displayMode === "timeline" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
               )}
             >
-              {mode}
+              <AlignLeft className="w-3.5 h-3.5" />
+              Timeline
             </button>
-          ))}
+            <button
+              onClick={() => setDisplayMode("grid")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                displayMode === "grid" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              Calendar
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-border" />
+
+          {/* Range mode tabs */}
+          <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+            {(["all", "upcoming", "past"] as RangeMode[]).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setRangeMode(mode)}
+                className={cn(
+                  "px-3 py-1.5 rounded-md text-sm font-medium transition-colors capitalize",
+                  rangeMode === mode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Category filter chips */}
@@ -264,9 +404,7 @@ export function CalendarPage() {
                   onClick={() => toggleCategory(cat.id)}
                   className={cn(
                     "flex items-center gap-1.5 px-3 py-1 rounded-full text-sm border transition-all",
-                    active
-                      ? "border-transparent text-white font-medium shadow-sm"
-                      : "border-border bg-card text-muted-foreground opacity-50 hover:opacity-70",
+                    active ? "border-transparent text-white font-medium shadow-sm" : "border-border bg-card text-muted-foreground opacity-50 hover:opacity-70",
                   )}
                   style={active ? { backgroundColor: cat.color || "#6b7280" } : undefined}
                 >
@@ -299,43 +437,47 @@ export function CalendarPage() {
             <h3 className="text-xl font-serif text-muted-foreground">No events found</h3>
             <p className="text-sm text-muted-foreground/60 mt-1">Try changing the filter or view mode</p>
           </div>
-        ) : (
+        ) : displayMode === "timeline" ? (
+          /* ── Timeline view ── */
           <div className="space-y-10">
-            {Array.from(grouped.entries()).map(([monthKey, monthEvents]) => {
-              const isCurrentMonth = monthKey === todayMonthKey;
+            {Array.from(timelineGrouped.entries()).map(([monthLabel, monthEvents]) => {
+              const isCurrentMonth = monthLabel === format(new Date(todayMonthKey + "-01"), "MMMM yyyy");
               return (
-                <section key={monthKey}>
-                  {/* Month header */}
+                <section key={monthLabel}>
                   <div
-                    ref={isCurrentMonth && viewMode === "all" ? todayRef : undefined}
+                    ref={isCurrentMonth && rangeMode === "all" ? todayRef : undefined}
                     className="flex items-center gap-3 mb-4"
                   >
-                    <h2 className={cn(
-                      "text-sm font-bold uppercase tracking-widest",
-                      isCurrentMonth ? "text-primary" : "text-muted-foreground",
-                    )}>
-                      {monthKey}
+                    <h2 className={cn("text-sm font-bold uppercase tracking-widest", isCurrentMonth ? "text-primary" : "text-muted-foreground")}>
+                      {monthLabel}
                     </h2>
                     {isCurrentMonth && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-primary/15 text-primary px-2 py-0.5 rounded">
-                        Current
-                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider bg-primary/15 text-primary px-2 py-0.5 rounded">Current</span>
                     )}
                     <div className="flex-1 h-px bg-border" />
-                    <span className="text-xs text-muted-foreground">
-                      {monthEvents.length} event{monthEvents.length !== 1 ? "s" : ""}
-                    </span>
+                    <span className="text-xs text-muted-foreground">{monthEvents.length} event{monthEvents.length !== 1 ? "s" : ""}</span>
                   </div>
-
-                  {/* Events */}
                   <div className="space-y-2.5">
                     {monthEvents.map((ev) => (
-                      <EventCard key={ev.id} event={ev} />
+                      <TimelineEventCard key={ev.id} event={ev} />
                     ))}
                   </div>
                 </section>
               );
             })}
+          </div>
+        ) : (
+          /* ── Grid view ── */
+          <div className="space-y-10">
+            {Array.from(groupedByMonth.keys()).map((monthKey) => (
+              <MonthGrid
+                key={monthKey}
+                monthKey={monthKey}
+                events={groupedByMonth.get(monthKey)!}
+                isCurrentMonth={monthKey === todayMonthKey}
+                todayRef={monthKey === todayMonthKey && rangeMode === "all" ? todayRef : undefined}
+              />
+            ))}
           </div>
         )}
       </div>
