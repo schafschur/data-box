@@ -152,6 +152,8 @@ export type BlockUpdateContent = { [key: string]: unknown } | null;
 export interface BlockUpdate {
   /** @nullable */
   title?: string | null;
+  /** @nullable */
+  importance?: number | null;
   /**
      * Type-discriminated block content object
      * @nullable
