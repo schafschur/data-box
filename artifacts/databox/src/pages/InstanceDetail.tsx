@@ -35,7 +35,7 @@ export function InstanceDetail() {
   const queryClient = useQueryClient();
 
   const [editOpen, setEditOpen] = useState(false);
-  const [mobileTab, setMobileTab] = useState<"blocks" | "analysis">("blocks");
+  const [activeTab, setActiveTab] = useState<"blocks" | "analysis">("blocks");
   const [localBlocks, setLocalBlocks] = useState<Block[]>([]);
 
   const { data: instance, isLoading: isInstanceLoading } = useGetInstance(id, {
@@ -172,14 +172,14 @@ export function InstanceDetail() {
           />
         )}
 
-        {/* Mobile tab bar — only shown when there are blocks */}
+        {/* Tab bar — always visible when there are blocks */}
         {hasBlocks && (
-          <div className="flex lg:hidden border-b mb-6 gap-0">
+          <div className="flex border-b mb-6 gap-0">
             <button
-              onClick={() => setMobileTab("blocks")}
+              onClick={() => setActiveTab("blocks")}
               className={cn(
                 "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
-                mobileTab === "blocks"
+                activeTab === "blocks"
                   ? "border-primary text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground"
               )}
@@ -188,10 +188,10 @@ export function InstanceDetail() {
               Blocks
             </button>
             <button
-              onClick={() => setMobileTab("analysis")}
+              onClick={() => setActiveTab("analysis")}
               className={cn(
                 "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
-                mobileTab === "analysis"
+                activeTab === "analysis"
                   ? "border-primary text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground"
               )}
@@ -202,52 +202,45 @@ export function InstanceDetail() {
           </div>
         )}
 
-        {/* Desktop: two-column. Mobile: single-column controlled by tab */}
-        <div className={cn(hasBlocks ? "lg:grid lg:grid-cols-[1fr_320px] lg:gap-10" : "")}>
-          {/* Blocks column */}
-          <div className={cn(hasBlocks && mobileTab === "analysis" ? "hidden lg:block" : "block")}>
-            {isBlocksLoading ? (
-              <div className="space-y-6">
-                {[1, 2].map(i => (
-                  <Skeleton key={i} className="h-64 w-full rounded-lg" />
-                ))}
-              </div>
-            ) : localBlocks.length === 0 ? (
-              <div className="text-center py-20 border border-dashed rounded-lg bg-card/50">
-                <h3 className="text-xl font-serif text-muted-foreground mb-4">No blocks yet</h3>
-                <CreateBlockDialog instanceId={id} />
-              </div>
-            ) : (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
+        {/* Blocks tab */}
+        <div className={cn(activeTab === "analysis" ? "hidden" : "block")}>
+          {isBlocksLoading ? (
+            <div className="space-y-6">
+              {[1, 2].map(i => (
+                <Skeleton key={i} className="h-64 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : localBlocks.length === 0 ? (
+            <div className="text-center py-20 border border-dashed rounded-lg bg-card/50">
+              <h3 className="text-xl font-serif text-muted-foreground mb-4">No blocks yet</h3>
+              <CreateBlockDialog instanceId={id} />
+            </div>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={localBlocks.map((b) => b.id)}
+                strategy={verticalListSortingStrategy}
               >
-                <SortableContext
-                  items={localBlocks.map((b) => b.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="space-y-12">
-                    {localBlocks.map((block) => (
-                      <SortableBlockRenderer key={block.id} block={block} />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            )}
-          </div>
-
-          {/* Analysis column — sticky sidebar on desktop, full-width tab on mobile */}
-          {hasBlocks && (
-            <aside className={cn(
-              mobileTab === "blocks" ? "hidden lg:block" : "block",
-              "lg:sticky lg:top-6 lg:self-start"
-            )}>
-              <h2 className="text-lg font-serif mb-4 hidden lg:block">Analysis</h2>
-              <AnalysisPanel instanceId={id} />
-            </aside>
+                <div className="space-y-12">
+                  {localBlocks.map((block) => (
+                    <SortableBlockRenderer key={block.id} block={block} />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           )}
         </div>
+
+        {/* Analysis tab */}
+        {hasBlocks && activeTab === "analysis" && (
+          <div className="max-w-2xl">
+            <AnalysisPanel instanceId={id} />
+          </div>
+        )}
       </div>
     </AppLayout>
   );
