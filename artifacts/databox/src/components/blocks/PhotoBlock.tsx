@@ -46,7 +46,7 @@ function PhotoThumbnail({
       )}
     >
       <img
-        src={`/api/storage${photo.objectPath}`}
+        src={`/api/storage${photo.objectPath}?t=${photo.updatedAt}`}
         alt={photo.caption || "Photo"}
         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
       />
@@ -384,7 +384,7 @@ function PhotoLightbox({
           </button>
         )}
         <img
-          src={`/api/storage${photo.objectPath}`}
+          src={`/api/storage${photo.objectPath}?t=${photo.updatedAt}`}
           alt={photo.caption || "Photo"}
           className={cn("select-none block", zoomed ? "max-w-none max-h-none" : "max-w-full object-contain")}
           style={zoomed ? {} : { maxHeight: "100%" }}
