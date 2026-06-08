@@ -2629,11 +2629,11 @@ export const createContactCard = async (
   options?: SecondParameter<typeof customFetch>
 ): Promise<ContactCard> =>
   customFetch<ContactCard>(getListContactCardsUrl(blockId), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    data,
     ...options,
-  } as Parameters<typeof customFetch>[1]);
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(options as RequestInit | undefined)?.headers },
+    body: JSON.stringify(data),
+  });
 
 export const useCreateContactCard = <TError = ErrorType<unknown>, TContext = unknown>(
   options?: {
@@ -2663,11 +2663,11 @@ export const updateContactCard = async (
   options?: SecondParameter<typeof customFetch>
 ): Promise<ContactCard> =>
   customFetch<ContactCard>(getUpdateContactCardUrl(id), {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    data,
     ...options,
-  } as Parameters<typeof customFetch>[1]);
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...(options as RequestInit | undefined)?.headers },
+    body: JSON.stringify(data),
+  });
 
 export const useUpdateContactCard = <TError = ErrorType<unknown>, TContext = unknown>(
   options?: {
@@ -2716,11 +2716,11 @@ export const reorderContactCards = async (
   options?: SecondParameter<typeof customFetch>
 ): Promise<void> =>
   customFetch<void>(getReorderContactCardsUrl(blockId), {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    data,
     ...options,
-  } as Parameters<typeof customFetch>[1]);
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...(options as RequestInit | undefined)?.headers },
+    body: JSON.stringify(data),
+  });
 
 export const useReorderContactCards = <TError = ErrorType<unknown>, TContext = unknown>(
   options?: {

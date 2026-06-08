@@ -491,11 +491,13 @@ export function ContactBlock({ block }: { block: Block }) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
-  const { data: cards = [] } = useListContactCards(block.id);
+  const { data: cards } = useListContactCards(block.id);
   const [sortedCards, setSortedCards] = useState<ContactCard[]>([]);
 
   useEffect(() => {
-    setSortedCards(cards as ContactCard[]);
+    if (cards !== undefined) {
+      setSortedCards(cards as ContactCard[]);
+    }
   }, [cards]);
 
   const createCard = useCreateContactCard();
