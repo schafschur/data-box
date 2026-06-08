@@ -363,8 +363,12 @@ function PhotoLightbox({
 
       {/* Image + nav */}
       <div
-        className={cn("flex-1 relative flex items-center justify-center min-h-0",
-          zoomed && "overflow-auto")}
+        className={cn(
+          "flex-1 relative min-h-0",
+          zoomed
+            ? "overflow-auto flex items-start justify-start"
+            : "flex items-center justify-center"
+        )}
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         {idx > 0 && (
