@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useGetInstance, useListBlocks, useDeleteInstance, useReorderBlocks, getGetInstanceQueryKey, getListBlocksQueryKey, getListInstancesQueryKey } from "@workspace/api-client-react";
+import { useGetInstance, useGetCategory, useListBlocks, useDeleteInstance, useReorderBlocks, getGetInstanceQueryKey, getListBlocksQueryKey, getListInstancesQueryKey } from "@workspace/api-client-react";
 import type { Block } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,10 @@ export function InstanceDetail() {
 
   const { data: instance, isLoading: isInstanceLoading } = useGetInstance(id, {
     query: { enabled: !!id, queryKey: getGetInstanceQueryKey(id) }
+  });
+
+  const { data: category } = useGetCategory(instance?.categoryId ?? 0, {
+    query: { enabled: !!instance?.categoryId }
   });
 
   const { data: blocks, isLoading: isBlocksLoading } = useListBlocks(id, {
@@ -122,7 +126,7 @@ export function InstanceDetail() {
         {instance && (
           <div className="flex items-center text-sm text-muted-foreground font-medium mb-4">
             <Link href={`/categories/${instance.categoryId}`} className="hover:text-foreground transition-colors">
-              Category
+              {category?.name ?? "Category"}
             </Link>
             <ChevronRight className="w-4 h-4 mx-1 opacity-50" />
             <span className="text-foreground">{instance.name}</span>
