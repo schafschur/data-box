@@ -4,6 +4,8 @@ import {
   Background,
   Controls,
   MiniMap,
+  Handle,
+  Position,
   addEdge,
   useNodesState,
   useEdgesState,
@@ -48,6 +50,19 @@ interface MapLayout {
   customEdges: Array<{ id: string; source: string; target: string }>;
 }
 
+/* ─── Handle style helper ────────────────────────────────────────────── */
+function handleStyle(accent: string): React.CSSProperties {
+  return {
+    width: 14,
+    height: 14,
+    background: accent,
+    border: "2.5px solid white",
+    boxShadow: "0 0 0 1.5px " + accent,
+    borderRadius: "50%",
+    cursor: "crosshair",
+  };
+}
+
 /* ─── Custom node card ───────────────────────────────────────────────── */
 function NodeCard({
   icon,
@@ -61,20 +76,26 @@ function NodeCard({
   accent: string;
 }) {
   return (
-    <div
-      className="rounded-xl shadow-md bg-card border border-card-border text-card-foreground min-w-[180px] max-w-[260px] overflow-hidden"
-      style={{ borderTopColor: accent, borderTopWidth: 3 }}
-    >
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-card-border bg-muted/40">
-        <span style={{ color: accent }}>{icon}</span>
-        <span className="text-xs font-semibold truncate">{title || "Untitled"}</span>
-      </div>
-      {children && (
-        <div className="px-3 py-2 text-xs text-muted-foreground space-y-0.5">
-          {children}
+    <>
+      <Handle id="top"    type="target" position={Position.Top}    style={handleStyle(accent)} />
+      <Handle id="left"   type="target" position={Position.Left}   style={handleStyle(accent)} />
+      <div
+        className="rounded-xl shadow-md bg-card border border-card-border text-card-foreground min-w-[180px] max-w-[260px] overflow-hidden"
+        style={{ borderTopColor: accent, borderTopWidth: 3 }}
+      >
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-card-border bg-muted/40">
+          <span style={{ color: accent }}>{icon}</span>
+          <span className="text-xs font-semibold truncate">{title || "Untitled"}</span>
         </div>
-      )}
-    </div>
+        {children && (
+          <div className="px-3 py-2 text-xs text-muted-foreground space-y-0.5">
+            {children}
+          </div>
+        )}
+      </div>
+      <Handle id="bottom" type="source" position={Position.Bottom} style={handleStyle(accent)} />
+      <Handle id="right"  type="source" position={Position.Right}  style={handleStyle(accent)} />
+    </>
   );
 }
 
@@ -91,27 +112,37 @@ function RichtextNode({ data }: { data: { title: string; preview: string } }) {
 
 function TodoBlockNode({ data }: { data: { title: string; count: number; done: number } }) {
   const pct = data.count > 0 ? Math.round((data.done / data.count) * 100) : 0;
+  const accent = "hsl(16 75% 61%)";
   return (
-    <NodeCard icon={<CheckSquare className="w-3.5 h-3.5" />} title={data.title} accent="hsl(16 75% 61%)">
+    <NodeCard icon={<CheckSquare className="w-3.5 h-3.5" />} title={data.title} accent={accent}>
       <div className="flex items-center justify-between mb-1">
         <span>{data.done}/{data.count} done</span>
         <span className="font-medium">{pct}%</span>
       </div>
       <div className="h-1.5 rounded-full bg-border overflow-hidden">
-        <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: accent }} />
       </div>
     </NodeCard>
   );
 }
 
 function TodoItemNode({ data }: { data: { text: string; completed: boolean } }) {
+  const accent = "hsl(16 75% 61%)";
   return (
-    <div className="rounded-lg shadow bg-card border border-card-border px-3 py-1.5 flex items-center gap-2 text-xs max-w-[220px]">
-      <span className={`w-3.5 h-3.5 rounded border flex-shrink-0 flex items-center justify-center ${data.completed ? "bg-accent border-accent" : "border-border"}`}>
-        {data.completed && <span className="text-white text-[8px]">✓</span>}
-      </span>
-      <span className={`truncate ${data.completed ? "line-through text-muted-foreground" : ""}`}>{data.text}</span>
-    </div>
+    <>
+      <Handle id="top"    type="target" position={Position.Top}    style={handleStyle(accent)} />
+      <Handle id="left"   type="target" position={Position.Left}   style={handleStyle(accent)} />
+      <div className="rounded-lg shadow-md bg-card border border-card-border px-3 py-2 flex items-center gap-2 text-xs max-w-[220px]"
+        style={{ borderLeftColor: accent, borderLeftWidth: 3 }}>
+        <span className={`w-3.5 h-3.5 rounded border flex-shrink-0 flex items-center justify-center ${data.completed ? "border-[hsl(16_75%_61%)]" : "border-border"}`}
+          style={data.completed ? { background: accent } : {}}>
+          {data.completed && <span className="text-white text-[8px]">✓</span>}
+        </span>
+        <span className={`truncate ${data.completed ? "line-through text-muted-foreground" : ""}`}>{data.text}</span>
+      </div>
+      <Handle id="bottom" type="source" position={Position.Bottom} style={handleStyle(accent)} />
+      <Handle id="right"  type="source" position={Position.Right}  style={handleStyle(accent)} />
+    </>
   );
 }
 
@@ -124,11 +155,19 @@ function CalendarBlockNode({ data }: { data: { title: string; count: number } })
 }
 
 function CalendarEventNode({ data }: { data: { title: string; date: string } }) {
+  const accent = "hsl(346 58% 57%)";
   return (
-    <div className="rounded-lg shadow bg-card border border-card-border px-3 py-1.5 text-xs max-w-[220px]">
-      <div className="font-medium truncate">{data.title}</div>
-      <div className="text-muted-foreground">{data.date}</div>
-    </div>
+    <>
+      <Handle id="top"    type="target" position={Position.Top}    style={handleStyle(accent)} />
+      <Handle id="left"   type="target" position={Position.Left}   style={handleStyle(accent)} />
+      <div className="rounded-lg shadow-md bg-card border border-card-border px-3 py-2 text-xs max-w-[220px]"
+        style={{ borderLeftColor: accent, borderLeftWidth: 3 }}>
+        <div className="font-medium truncate">{data.title}</div>
+        <div className="text-muted-foreground">{data.date}</div>
+      </div>
+      <Handle id="bottom" type="source" position={Position.Bottom} style={handleStyle(accent)} />
+      <Handle id="right"  type="source" position={Position.Right}  style={handleStyle(accent)} />
+    </>
   );
 }
 
@@ -186,6 +225,8 @@ function buildInitialLayout(
           id: `e-${blockNodeId}-${itemId}`,
           source: blockNodeId,
           target: itemId,
+          sourceHandle: "bottom",
+          targetHandle: "top",
           style: { stroke: "hsl(16 75% 61%)", strokeWidth: 1.5, strokeDasharray: "4 3" },
           animated: false,
         });
@@ -212,6 +253,8 @@ function buildInitialLayout(
           id: `e-${blockNodeId}-${evId}`,
           source: blockNodeId,
           target: evId,
+          sourceHandle: "bottom",
+          targetHandle: "top",
           style: { stroke: "hsl(346 58% 57%)", strokeWidth: 1.5, strokeDasharray: "4 3" },
           animated: false,
         });
