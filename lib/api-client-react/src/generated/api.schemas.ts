@@ -262,9 +262,20 @@ export interface CalendarStats {
   nextEvent?: CalendarEvent | null;
 }
 
+export interface PhotoMonthCount {
+  month: string;
+  count: number;
+}
+
 export interface PhotoStats {
   blockCount: number;
   totalPhotos: number;
+  withCaption: number;
+  withNotes: number;
+  withDate: number;
+  earliestDate: string | null;
+  latestDate: string | null;
+  byMonth: PhotoMonthCount[];
 }
 
 export interface InstanceAnalysis {

@@ -1077,7 +1077,32 @@ components:
           type: integer
         totalPhotos:
           type: integer
-      required: [blockCount, totalPhotos]
+        withCaption:
+          type: integer
+        withNotes:
+          type: integer
+        withDate:
+          type: integer
+        earliestDate:
+          type: string
+          nullable: true
+        latestDate:
+          type: string
+          nullable: true
+        byMonth:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhotoMonthCount"
+      required: [blockCount, totalPhotos, withCaption, withNotes, withDate, earliestDate, latestDate, byMonth]
+
+    PhotoMonthCount:
+      type: object
+      properties:
+        month:
+          type: string
+        count:
+          type: integer
+      required: [month, count]
 
     # ── Storage ───────────────────────────────────────────────────────────
     UploadUrlRequest:

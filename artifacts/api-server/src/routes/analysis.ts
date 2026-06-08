@@ -128,15 +128,49 @@ router.get("/instances/:id/analysis", async (req: Request, res: Response) => {
 
   // Photo stats
   let totalPhotos = 0;
+  let withCaption = 0;
+  let withNotes = 0;
+  let withDate = 0;
+  let earliestDate: string | null = null;
+  let latestDate: string | null = null;
+  const monthCounts = new Map<string, number>();
+
   if (photoBlocks.length > 0) {
     for (const b of photoBlocks) {
       const photos = await db
-        .select({ id: photosTable.id })
+        .select({
+          id: photosTable.id,
+          caption: photosTable.caption,
+          notes: photosTable.notes,
+          displayDate: photosTable.displayDate,
+          createdAt: photosTable.createdAt,
+        })
         .from(photosTable)
         .where(eq(photosTable.blockId, b.id));
-      totalPhotos += photos.length;
+
+      for (const p of photos) {
+        totalPhotos++;
+        if (p.caption?.trim()) withCaption++;
+        if (p.notes?.trim()) withNotes++;
+        if (p.displayDate?.trim()) withDate++;
+
+        // Date for timeline — prefer displayDate, fall back to createdAt
+        const dateStr = p.displayDate?.trim()
+          ? p.displayDate
+          : p.createdAt.toISOString().slice(0, 10);
+
+        const month = dateStr.slice(0, 7); // YYYY-MM
+        monthCounts.set(month, (monthCounts.get(month) ?? 0) + 1);
+
+        if (!earliestDate || dateStr < earliestDate) earliestDate = dateStr;
+        if (!latestDate || dateStr > latestDate) latestDate = dateStr;
+      }
     }
   }
+
+  const byMonth = [...monthCounts.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, count]) => ({ month, count }));
 
   res.json({
     instanceId: id,
@@ -162,6 +196,12 @@ router.get("/instances/:id/analysis", async (req: Request, res: Response) => {
     photoStats: {
       blockCount: photoBlocks.length,
       totalPhotos,
+      withCaption,
+      withNotes,
+      withDate,
+      earliestDate,
+      latestDate,
+      byMonth,
     },
   });
 });
