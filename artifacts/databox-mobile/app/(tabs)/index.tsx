@@ -488,16 +488,6 @@ export default function HomeScreen() {
               </Text>
             </View>
           }
-          ListFooterComponent={
-            (categories ?? []).length > 0 ? (
-              <View style={styles.sectionHeader}>
-                <Feather name="folder" size={13} color={colors.mutedForeground} />
-                <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                  CATEGORIES
-                </Text>
-              </View>
-            ) : null
-          }
           renderItem={({ item, index }) => (
             <>
               {index === 0 && (
