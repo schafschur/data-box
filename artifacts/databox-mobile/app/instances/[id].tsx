@@ -237,10 +237,19 @@ export default function InstanceScreen() {
           headerRight: () => (
             <Pressable
               onPress={() => setShowModal(true)}
-              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, marginRight: 4 })}
+              style={({ pressed }) => ({
+                width: 36,
+                height: 36,
+                borderRadius: colors.radius,
+                backgroundColor: colors.primary,
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 4,
+                opacity: pressed ? 0.8 : 1,
+              })}
               testID="new-block-btn"
             >
-              <Feather name="plus" size={24} color={colors.primary} />
+              <Feather name="plus" size={20} color="#fff" />
             </Pressable>
           ),
         }}
