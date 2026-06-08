@@ -327,149 +327,155 @@ function PhotoLightbox({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex flex-col"
+      className="fixed inset-0 z-[9999] flex flex-row"
       style={{ background: "rgba(0,0,0,0.95)" }}
       onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
     >
-      {/* Top bar */}
-      <div className="flex-shrink-0 flex items-center justify-between px-5 py-3">
-        <span className="text-white/50 text-sm tabular-nums">{idx + 1} / {photos.length}</span>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={handleRotate}
-            disabled={isRotating}
-            className="text-white/70 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
-            title="Rotate 90° clockwise"
-          >
-            {isRotating
-              ? <Loader2 className="h-4 w-4 animate-spin" />
-              : <RotateCw className="h-4 w-4" />}
-          </button>
-          <button
-            onClick={() => setZoomed(z => !z)}
-            className="text-white/70 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
-            title={zoomed ? "Fit to screen" : "Full size"}
-          >
-            {zoomed ? <ZoomOut className="h-4 w-4" /> : <ZoomIn className="h-4 w-4" />}
-          </button>
-          <button
-            onClick={onClose}
-            className="text-white/70 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
+      {/* Left: top bar + image */}
+      <div className="flex flex-col flex-1 min-w-0">
+        {/* Top bar */}
+        <div className="flex-shrink-0 flex items-center justify-between px-5 py-3">
+          <span className="text-white/50 text-sm tabular-nums">{idx + 1} / {photos.length}</span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleRotate}
+              disabled={isRotating}
+              className="text-white/70 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
+              title="Rotate 90° clockwise"
+            >
+              {isRotating
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <RotateCw className="h-4 w-4" />}
+            </button>
+            <button
+              onClick={() => setZoomed(z => !z)}
+              className="text-white/70 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
+              title={zoomed ? "Fit to screen" : "Full size"}
+            >
+              {zoomed ? <ZoomOut className="h-4 w-4" /> : <ZoomIn className="h-4 w-4" />}
+            </button>
+            <button
+              onClick={onClose}
+              className="text-white/70 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Image + nav */}
+        <div
+          className={cn(
+            "flex-1 relative min-h-0",
+            zoomed
+              ? "overflow-auto flex items-start justify-center"
+              : "flex items-center justify-center"
+          )}
+          onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
+          {idx > 0 && (
+            <button
+              onClick={() => setIdx(i => i - 1)}
+              className="absolute left-3 z-10 p-2.5 bg-black/50 hover:bg-black/75 rounded-full text-white transition-colors"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+          )}
+          {idx < photos.length - 1 && (
+            <button
+              onClick={() => setIdx(i => i + 1)}
+              className="absolute right-3 z-10 p-2.5 bg-black/50 hover:bg-black/75 rounded-full text-white transition-colors"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          )}
+          <img
+            src={`/api/storage${photo.objectPath}?t=${photo.updatedAt}`}
+            alt={photo.caption || "Photo"}
+            className={cn("select-none block", zoomed ? "max-w-none max-h-none" : "max-w-full object-contain")}
+            style={zoomed ? {} : { maxHeight: "100%" }}
+            draggable={false}
+          />
         </div>
       </div>
 
-      {/* Image + nav */}
-      <div
-        className={cn(
-          "flex-1 relative min-h-0",
-          zoomed
-            ? "overflow-auto flex items-start justify-center"
-            : "flex items-center justify-center"
-        )}
-        onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      >
-        {idx > 0 && (
-          <button
-            onClick={() => setIdx(i => i - 1)}
-            className="absolute left-3 z-10 p-2.5 bg-black/50 hover:bg-black/75 rounded-full text-white transition-colors"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-        )}
-        {idx < photos.length - 1 && (
-          <button
-            onClick={() => setIdx(i => i + 1)}
-            className="absolute right-3 z-10 p-2.5 bg-black/50 hover:bg-black/75 rounded-full text-white transition-colors"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
-        )}
-        <img
-          src={`/api/storage${photo.objectPath}?t=${photo.updatedAt}`}
-          alt={photo.caption || "Photo"}
-          className={cn("select-none block", zoomed ? "max-w-none max-h-none" : "max-w-full object-contain")}
-          style={zoomed ? {} : { maxHeight: "100%" }}
-          draggable={false}
-        />
-      </div>
+      {/* Right: info sidebar */}
+      <div className="w-72 flex-shrink-0 flex flex-col bg-[#0a0a0a] border-l border-white/10 overflow-y-auto">
+        <div className="flex flex-col gap-4 p-5 flex-1">
+          <label className="block">
+            <span className="text-white/40 text-[10px] uppercase tracking-widest mb-1.5 block">Caption</span>
+            <input
+              className="w-full text-white text-sm rounded-md px-3 py-1.5 border border-white/15 focus:outline-none focus:border-white/40 placeholder:text-white/25"
+              style={{ background: "rgba(255,255,255,0.05)" }}
+              value={caption}
+              onChange={e => setCaption(e.target.value)}
+              onBlur={() => save("caption", caption)}
+              onKeyDown={e => { if (e.key === "Enter") e.currentTarget.blur(); }}
+              placeholder="Add caption…"
+            />
+          </label>
 
-      {/* Info panel — hidden when zoomed */}
-      <div className={cn("flex-shrink-0 bg-[#0a0a0a] border-t border-white/10 px-6 py-4 overflow-y-auto", zoomed && "hidden")} style={{ maxHeight: 260 }}>
-        <div className="max-w-2xl mx-auto">
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block">
-              <span className="text-white/40 text-[10px] uppercase tracking-widest mb-1 block">Caption</span>
-              <input
-                className="w-full bg-white/8 text-white text-sm rounded-md px-3 py-1.5 border border-white/15 focus:outline-none focus:border-white/40 placeholder:text-white/25"
-                style={{ background: "rgba(255,255,255,0.05)" }}
-                value={caption}
-                onChange={e => setCaption(e.target.value)}
-                onBlur={() => save("caption", caption)}
-                onKeyDown={e => { if (e.key === "Enter") e.currentTarget.blur(); }}
-                placeholder="Add caption…"
-              />
-            </label>
-            <label className="block">
-              <span className="text-white/40 text-[10px] uppercase tracking-widest mb-1 block">Category</span>
-              <input
-                className="w-full text-white text-sm rounded-md px-3 py-1.5 border border-white/15 focus:outline-none focus:border-white/40 placeholder:text-white/25"
-                style={{ background: "rgba(255,255,255,0.05)" }}
-                value={category}
-                onChange={e => setCategory(e.target.value)}
-                onBlur={() => save("photoCategory", category)}
-                onKeyDown={e => { if (e.key === "Enter") e.currentTarget.blur(); }}
-                placeholder="No category"
-              />
-            </label>
-            <label className="block col-span-2">
-              <span className="text-white/40 text-[10px] uppercase tracking-widest mb-1 block">Notes</span>
-              <textarea
-                className="w-full text-white text-sm rounded-md px-3 py-1.5 border border-white/15 focus:outline-none focus:border-white/40 placeholder:text-white/25 resize-none"
-                style={{ background: "rgba(255,255,255,0.05)" }}
-                rows={2}
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                onBlur={() => save("notes", notes)}
-                placeholder="Add notes…"
-              />
-            </label>
-            <label className="block">
-              <span className="text-white/40 text-[10px] uppercase tracking-widest mb-1 block">Calendar date</span>
-              <input
-                type="date"
-                className="w-full text-white text-sm rounded-md px-3 py-1.5 border border-white/15 focus:outline-none focus:border-white/40"
-                style={{ background: "rgba(255,255,255,0.05)", colorScheme: "dark" }}
-                value={displayDate}
-                onChange={e => setDisplayDate(e.target.value)}
-                onBlur={() => save("displayDate", displayDate)}
-              />
-            </label>
-            <div className="flex items-end justify-end">
-              {confirmDelete ? (
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setConfirmDelete(false)} className="text-white/50 text-sm hover:text-white/80 transition-colors">
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    className="flex items-center gap-1 text-red-400 text-sm hover:text-red-300 transition-colors"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" /> Confirm delete
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setConfirmDelete(true)}
-                  className="flex items-center gap-1.5 text-white/30 hover:text-red-400 text-sm transition-colors"
-                >
-                  <Trash2 className="h-3.5 w-3.5" /> Delete photo
-                </button>
-              )}
+          <label className="block">
+            <span className="text-white/40 text-[10px] uppercase tracking-widest mb-1.5 block">Category</span>
+            <input
+              className="w-full text-white text-sm rounded-md px-3 py-1.5 border border-white/15 focus:outline-none focus:border-white/40 placeholder:text-white/25"
+              style={{ background: "rgba(255,255,255,0.05)" }}
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+              onBlur={() => save("photoCategory", category)}
+              onKeyDown={e => { if (e.key === "Enter") e.currentTarget.blur(); }}
+              placeholder="No category"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-white/40 text-[10px] uppercase tracking-widest mb-1.5 block">Notes</span>
+            <textarea
+              className="w-full text-white text-sm rounded-md px-3 py-1.5 border border-white/15 focus:outline-none focus:border-white/40 placeholder:text-white/25 resize-none"
+              style={{ background: "rgba(255,255,255,0.05)" }}
+              rows={4}
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              onBlur={() => save("notes", notes)}
+              placeholder="Add notes…"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-white/40 text-[10px] uppercase tracking-widest mb-1.5 block">Calendar date</span>
+            <input
+              type="date"
+              className="w-full text-white text-sm rounded-md px-3 py-1.5 border border-white/15 focus:outline-none focus:border-white/40"
+              style={{ background: "rgba(255,255,255,0.05)", colorScheme: "dark" }}
+              value={displayDate}
+              onChange={e => setDisplayDate(e.target.value)}
+              onBlur={() => save("displayDate", displayDate)}
+            />
+          </label>
+        </div>
+
+        {/* Delete — pinned to bottom */}
+        <div className="flex-shrink-0 px-5 py-4 border-t border-white/10">
+          {confirmDelete ? (
+            <div className="flex items-center gap-3">
+              <button onClick={() => setConfirmDelete(false)} className="text-white/50 text-sm hover:text-white/80 transition-colors">
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="flex items-center gap-1 text-red-400 text-sm hover:text-red-300 transition-colors"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Confirm delete
+              </button>
             </div>
-          </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center gap-1.5 text-white/30 hover:text-red-400 text-sm transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Delete photo
+            </button>
+          )}
         </div>
       </div>
     </div>,
