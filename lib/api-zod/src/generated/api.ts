@@ -9,6 +9,26 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Full-text search across instances and blocks
+ */
+export const SearchQueryParams = zod.object({
+  "q": zod.coerce.string().describe('Search query string')
+})
+
+export const SearchResponseItem = zod.object({
+  "type": zod.enum(['instance', 'block']),
+  "instanceId": zod.number(),
+  "categoryId": zod.number(),
+  "instanceName": zod.string(),
+  "blockId": zod.number().nullable(),
+  "blockTitle": zod.string().nullable(),
+  "blockType": zod.union([zod.literal('richtext'),zod.literal('todo'),zod.literal('calendar'),zod.literal('photo'),zod.literal(null)]).nullable(),
+  "snippet": zod.string().nullable()
+})
+export const SearchResponse = zod.array(SearchResponseItem)
+
+
+/**
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -208,15 +228,29 @@ export const CreateBlockBody = zod.object({
 
 
 /**
- * @summary Reorder blocks in an instance
+ * @summary Reorder blocks in bulk
  */
 export const ReorderBlocksParams = zod.object({
   "instanceId": zod.coerce.number()
 })
 
 export const ReorderBlocksBody = zod.object({
-  "ids": zod.array(zod.number())
+  "ids": zod.array(zod.number()).describe('Ordered list of block IDs (first = position 0)')
 })
+
+export const ReorderBlocksResponseItem = zod.object({
+  "id": zod.number(),
+  "instanceId": zod.number(),
+  "type": zod.enum(['richtext', 'todo', 'calendar', 'photo']),
+  "title": zod.string().nullish(),
+  "position": zod.number(),
+  "content": zod.object({
+
+}).passthrough().nullish().describe('Type-discriminated block content (e.g. {\"html\":\"...\"} for richtext blocks)'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ReorderBlocksResponse = zod.array(ReorderBlocksResponseItem)
 
 
 /**

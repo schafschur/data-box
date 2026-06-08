@@ -5,6 +5,42 @@
  * Databox — data workspace API
  * OpenAPI spec version: 0.1.0
  */
+export type SearchResultType = typeof SearchResultType[keyof typeof SearchResultType];
+
+
+export const SearchResultType = {
+  instance: 'instance',
+  block: 'block',
+} as const;
+
+/**
+ * @nullable
+ */
+export type SearchResultBlockType = typeof SearchResultBlockType[keyof typeof SearchResultBlockType] | null;
+
+
+export const SearchResultBlockType = {
+  richtext: 'richtext',
+  todo: 'todo',
+  calendar: 'calendar',
+  photo: 'photo',
+} as const;
+
+export interface SearchResult {
+  type: SearchResultType;
+  instanceId: number;
+  categoryId: number;
+  instanceName: string;
+  /** @nullable */
+  blockId: number | null;
+  /** @nullable */
+  blockTitle: string | null;
+  /** @nullable */
+  blockType: SearchResultBlockType;
+  /** @nullable */
+  snippet: string | null;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -82,6 +118,11 @@ export interface Block {
   updatedAt: string;
 }
 
+export interface BlockReorderBody {
+  /** Ordered list of block IDs (first = position 0) */
+  ids: number[];
+}
+
 export type BlockInputType = typeof BlockInputType[keyof typeof BlockInputType];
 
 
@@ -112,11 +153,6 @@ export interface BlockUpdate {
      * @nullable
      */
   content?: BlockUpdateContent;
-}
-
-export interface BlockReorderBody {
-  /** Ordered list of block IDs (first = position 0) */
-  ids: number[];
 }
 
 export interface TodoItem {
@@ -232,4 +268,11 @@ export interface UploadUrlResponse {
   uploadURL: string;
   objectPath: string;
 }
+
+export type SearchParams = {
+/**
+ * Search query string
+ */
+q: string;
+};
 

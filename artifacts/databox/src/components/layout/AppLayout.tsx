@@ -4,6 +4,7 @@ import { useListCategories } from "@workspace/api-client-react";
 import { Library, Folder, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { SearchBar } from "./SearchBar";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
@@ -19,6 +20,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <span>Databox</span>
           </Link>
         </div>
+
+        <SearchBar />
 
         <nav className="flex-1 px-4 py-2 space-y-6 overflow-y-auto">
           <div>

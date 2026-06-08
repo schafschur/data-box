@@ -23,7 +23,7 @@ export function SortableBlockRenderer({ block }: { block: Block }) {
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} id={`block-${block.id}`}>
       <BlockRenderer
         block={block}
         dragHandleRef={setActivatorNodeRef}

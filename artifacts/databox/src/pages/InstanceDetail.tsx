@@ -52,6 +52,16 @@ export function InstanceDetail() {
     }
   }, [blocks]);
 
+  useEffect(() => {
+    if (!blocks || blocks.length === 0) return;
+    const hash = window.location.hash;
+    if (!hash) return;
+    const el = document.querySelector(hash);
+    if (el) {
+      setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+    }
+  }, [blocks]);
+
   const deleteInstance = useDeleteInstance();
   const reorderBlocks = useReorderBlocks();
 

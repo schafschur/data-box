@@ -26,8 +26,39 @@ tags:
     description: Analysis of instance data
   - name: storage
     description: Object storage
+  - name: search
+    description: Full-text search
 
 paths:
+  # ─── Search ───────────────────────────────────────────────────────────────
+  /search:
+    get:
+      operationId: search
+      tags: [search]
+      summary: Full-text search across instances and blocks
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query string
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SearchResult"
+        "400":
+          description: Missing query parameter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /healthz:
     get:
       operationId: healthCheck
@@ -674,6 +705,30 @@ paths:
 
 components:
   schemas:
+    # ── Search ────────────────────────────────────────────────────────────
+    SearchResult:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [instance, block]
+        instanceId:
+          type: integer
+        categoryId:
+          type: integer
+        instanceName:
+          type: string
+        blockId:
+          type: ["integer", "null"]
+        blockTitle:
+          type: ["string", "null"]
+        blockType:
+          type: ["string", "null"]
+          enum: [richtext, todo, calendar, photo, null]
+        snippet:
+          type: ["string", "null"]
+      required: [type, instanceId, categoryId, instanceName, blockId, blockTitle, blockType, snippet]
+
     HealthStatus:
       type: object
       properties:
