@@ -53,11 +53,11 @@ interface MapLayout {
 /* ─── Handle style helper ────────────────────────────────────────────── */
 function handleStyle(accent: string): React.CSSProperties {
   return {
-    width: 14,
-    height: 14,
+    width: 7,
+    height: 7,
     background: accent,
-    border: "2.5px solid white",
-    boxShadow: "0 0 0 1.5px " + accent,
+    border: "1.5px solid white",
+    boxShadow: "0 0 0 1px " + accent,
     borderRadius: "50%",
     cursor: "crosshair",
   };
