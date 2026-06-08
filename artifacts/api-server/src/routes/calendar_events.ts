@@ -35,7 +35,14 @@ router.post("/blocks/:blockId/calendar-events", async (req: Request, res: Respon
     : String(parsed.data.date);
   const [row] = await db
     .insert(calendarEventsTable)
-    .values({ ...parsed.data, date: dateStr, blockId })
+    .values({
+      ...parsed.data,
+      date: dateStr,
+      blockId,
+      endDate:   parsed.data.endDate   ?? null,
+      startTime: parsed.data.startTime ?? null,
+      endTime:   parsed.data.endTime   ?? null,
+    })
     .returning();
   res.status(201).json(row);
 });
@@ -53,11 +60,14 @@ router.put("/calendar-events/:id", async (req: Request, res: Response) => {
   const [row] = await db
     .update(calendarEventsTable)
     .set({
-      title: parsed.data.title,
-      date: dateStr,
+      title:       parsed.data.title,
+      date:        dateStr,
+      endDate:     parsed.data.endDate   !== undefined ? (parsed.data.endDate   ?? null) : undefined,
+      startTime:   parsed.data.startTime !== undefined ? (parsed.data.startTime ?? null) : undefined,
+      endTime:     parsed.data.endTime   !== undefined ? (parsed.data.endTime   ?? null) : undefined,
       description: parsed.data.description,
       ...(parsed.data.highPriority !== undefined ? { highPriority: parsed.data.highPriority } : {}),
-      updatedAt: new Date(),
+      updatedAt:   new Date(),
     })
     .where(eq(calendarEventsTable.id, id))
     .returning();

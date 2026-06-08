@@ -193,6 +193,12 @@ export interface CalendarEvent {
   title: string;
   date: string;
   /** @nullable */
+  endDate?: string | null;
+  /** @nullable */
+  startTime?: string | null;
+  /** @nullable */
+  endTime?: string | null;
+  /** @nullable */
   description?: string | null;
   highPriority?: boolean;
   createdAt: string;
@@ -202,6 +208,12 @@ export interface CalendarEvent {
 export interface CalendarEventInput {
   title: string;
   date: string;
+  /** @nullable */
+  endDate?: string | null;
+  /** @nullable */
+  startTime?: string | null;
+  /** @nullable */
+  endTime?: string | null;
   /** @nullable */
   description?: string | null;
   highPriority?: boolean;
