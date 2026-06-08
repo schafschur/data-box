@@ -2741,3 +2741,148 @@ export const useReorderContactCards = <TError = ErrorType<unknown>, TContext = u
     mutationFn: ({ blockId, data }) => reorderContactCards(blockId, data),
     ...options?.mutation,
   });
+
+export const getListListItemsUrl = (blockId: number) =>
+  `/api/blocks/${blockId}/list-items`;
+
+export const getListListItemsQueryKey = (blockId: number) =>
+  [getListListItemsUrl(blockId)] as const;
+
+export const listListItems = async (
+  blockId: number,
+  options?: SecondParameter<typeof customFetch>
+): Promise<ListItem[]> =>
+  customFetch<ListItem[]>(getListListItemsUrl(blockId), options);
+
+export const getListListItemsQueryOptions = <TData = ListItem[], TError = ErrorType<unknown>>(
+  blockId: number,
+  options?: {
+    query?: UseQueryOptions<ListItem[], TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  }
+) => {
+  const { query: queryOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getListListItemsQueryKey(blockId);
+  return {
+    queryKey,
+    queryFn: () => listListItems(blockId),
+    enabled: !!blockId,
+    ...queryOptions,
+  } as UseQueryOptions<ListItem[], TError, TData> & { queryKey: QueryKey };
+};
+
+export function useListListItems<TData = ListItem[], TError = ErrorType<unknown>>(
+  blockId: number,
+  options?: {
+    query?: UseQueryOptions<ListItem[], TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListListItemsQueryOptions<TData, TError>(blockId, options);
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const createListItem = async (
+  blockId: number,
+  data: BodyType<ListItemInput>,
+  options?: SecondParameter<typeof customFetch>
+): Promise<ListItem> =>
+  customFetch<ListItem>(getListListItemsUrl(blockId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(options as RequestInit | undefined)?.headers },
+    body: JSON.stringify(data),
+  });
+
+export const useCreateListItem = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      ListItem,
+      TError,
+      { blockId: number; data: BodyType<ListItemInput> },
+      TContext
+    >;
+  }
+): UseMutationResult<ListItem, TError, { blockId: number; data: BodyType<ListItemInput> }, TContext> =>
+  useMutation({
+    mutationFn: ({ blockId, data }) => createListItem(blockId, data),
+    ...options?.mutation,
+  });
+
+export const getUpdateListItemUrl = (id: number) => `/api/list-items/${id}`;
+
+export const updateListItem = async (
+  id: number,
+  data: BodyType<ListItemInput>,
+  options?: SecondParameter<typeof customFetch>
+): Promise<ListItem> =>
+  customFetch<ListItem>(getUpdateListItemUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...(options as RequestInit | undefined)?.headers },
+    body: JSON.stringify(data),
+  });
+
+export const useUpdateListItem = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      ListItem,
+      TError,
+      { id: number; data: BodyType<ListItemInput> },
+      TContext
+    >;
+  }
+): UseMutationResult<ListItem, TError, { id: number; data: BodyType<ListItemInput> }, TContext> =>
+  useMutation({
+    mutationFn: ({ id, data }) => updateListItem(id, data),
+    ...options?.mutation,
+  });
+
+export const getDeleteListItemUrl = (id: number) => `/api/list-items/${id}`;
+
+export const deleteListItem = async (
+  id: number,
+  options?: SecondParameter<typeof customFetch>
+): Promise<void> =>
+  customFetch<void>(getDeleteListItemUrl(id), { method: "DELETE", ...options } as Parameters<typeof customFetch>[1]);
+
+export const useDeleteListItem = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<void, TError, { id: number }, TContext>;
+  }
+): UseMutationResult<void, TError, { id: number }, TContext> =>
+  useMutation({
+    mutationFn: ({ id }) => deleteListItem(id),
+    ...options?.mutation,
+  });
+
+export const getReorderListItemsUrl = (blockId: number) =>
+  `/api/blocks/${blockId}/list-items/reorder`;
+
+export const reorderListItems = async (
+  blockId: number,
+  data: ListItemReorderBody,
+  options?: SecondParameter<typeof customFetch>
+): Promise<void> =>
+  customFetch<void>(getReorderListItemsUrl(blockId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...(options as RequestInit | undefined)?.headers },
+    body: JSON.stringify(data),
+  });
+
+export const useReorderListItems = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      void,
+      TError,
+      { blockId: number; data: ListItemReorderBody },
+      TContext
+    >;
+  }
+): UseMutationResult<void, TError, { blockId: number; data: ListItemReorderBody }, TContext> =>
+  useMutation({
+    mutationFn: ({ blockId, data }) => reorderListItems(blockId, data),
+    ...options?.mutation,
+  });

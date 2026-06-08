@@ -16,4 +16,5 @@ export const BlockType = {
   photo: 'photo',
   pdf: 'pdf',
   contact: 'contact',
+  list: 'list',
 } as const;

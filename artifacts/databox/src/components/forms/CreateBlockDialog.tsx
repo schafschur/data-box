@@ -27,7 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const schema = z.object({
   title: z.string().optional(),
-  type: z.enum(["richtext", "todo", "calendar", "photo", "pdf", "contact"]),
+  type: z.enum(["richtext", "todo", "calendar", "photo", "pdf", "contact", "list"]),
 }).superRefine((data, ctx) => {
   if (data.type === "photo" && !data.title?.trim()) {
     ctx.addIssue({
@@ -55,6 +55,7 @@ export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
   const isPhoto = selectedType === "photo";
   const isPdf = selectedType === "pdf";
   const isContact = selectedType === "contact";
+  const isList = selectedType === "list";
 
   const onSubmit = (data: z.infer<typeof schema>) => {
     createBlock.mutate(
@@ -87,6 +88,8 @@ export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
               ? "Upload and manage PDF files in this block."
               : isContact
               ? "Store and manage contact cards with photos, email, and phone."
+              : isList
+              ? "A structured list of items, each with a title, description, and notes."
               : "Add a new section to your instance."}
           </DialogDescription>
         </DialogHeader>
@@ -118,6 +121,7 @@ export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
                       <SelectItem value="photo">Photos</SelectItem>
                       <SelectItem value="pdf">PDF Files</SelectItem>
                       <SelectItem value="contact">Contacts</SelectItem>
+                      <SelectItem value="list">List</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

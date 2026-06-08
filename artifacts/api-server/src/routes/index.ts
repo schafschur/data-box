@@ -13,6 +13,7 @@ import mapRouter from "./map";
 import searchRouter from "./search";
 import upcomingEventsRouter from "./upcoming_events";
 import contactCardsRouter from "./contact_cards";
+import listItemsRouter from "./list_items";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(mapRouter);
 router.use(searchRouter);
 router.use(upcomingEventsRouter);
 router.use(contactCardsRouter);
+router.use(listItemsRouter);
 
 export default router;

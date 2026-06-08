@@ -222,7 +222,7 @@ export const CreateBlockParams = zod.object({
 })
 
 export const CreateBlockBody = zod.object({
-  "type": zod.enum(['richtext', 'todo', 'calendar', 'photo', 'pdf', 'contact']),
+  "type": zod.enum(['richtext', 'todo', 'calendar', 'photo', 'pdf', 'contact', 'list']),
   "title": zod.string().nullish(),
   "importance": zod.number().int().min(1).max(10).nullish()
 })

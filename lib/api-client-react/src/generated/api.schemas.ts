@@ -26,6 +26,7 @@ export const SearchResultBlockType = {
   photo: 'photo',
   pdf: 'pdf',
   contact: 'contact',
+  list: 'list',
 } as const;
 
 export interface SearchResult {
@@ -98,6 +99,7 @@ export const BlockType = {
   photo: 'photo',
   pdf: 'pdf',
   contact: 'contact',
+  list: 'list',
 } as const;
 
 /**
@@ -341,6 +343,27 @@ export interface ContactCardInput {
 }
 
 export type ContactCardReorderBody = {
+  ids: number[];
+};
+
+export interface ListItem {
+  id: number;
+  blockId: number;
+  title: string;
+  description?: string | null;
+  notes?: string | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ListItemInput {
+  title: string;
+  description?: string | null;
+  notes?: string | null;
+}
+
+export type ListItemReorderBody = {
   ids: number[];
 };
 
