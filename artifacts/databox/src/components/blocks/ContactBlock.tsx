@@ -88,7 +88,7 @@ interface CardViewProps {
 
 function ContactCardView({ card, onEdit, onDelete, dragAttributes, dragListeners }: CardViewProps) {
   return (
-    <div className="group relative bg-card border border-border rounded-xl flex flex-col items-center gap-3 p-5 hover:shadow-md hover:border-primary/20 transition-all">
+    <div className="group relative bg-card border border-border rounded-xl flex flex-col items-center gap-3 p-5 hover:shadow-md hover:border-primary/20 transition-all h-full">
       <button
         className="absolute top-2 left-2 opacity-0 group-hover:opacity-30 hover:!opacity-60 cursor-grab active:cursor-grabbing touch-none p-0.5 rounded"
         {...(dragAttributes as object)}
@@ -446,7 +446,7 @@ function SortableCard({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn(isDragging && "opacity-50 z-50 relative")}
+      className={cn("h-full", isDragging && "opacity-50 z-50 relative")}
     >
       {isEditing ? (
         <ContactEditForm
