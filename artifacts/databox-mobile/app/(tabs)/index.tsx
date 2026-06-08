@@ -6,7 +6,7 @@ import {
 import type { Category } from "@workspace/api-client-react";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -30,6 +30,178 @@ const COLOR_PALETTE = [
   "#5BC8C0", "#FF6B6B", "#4ECDC4", "#45B7D1",
   "#96CEB4", "#FFEAA7", "#DDA0DD", "#98D8C8",
 ];
+
+interface UpcomingEvent {
+  id: number;
+  title: string;
+  date: string;
+  description: string | null;
+  blockId: number;
+  blockTitle: string | null;
+  instanceId: number;
+  instanceName: string;
+  categoryId: number;
+  categoryName: string;
+  categoryColor: string | null;
+}
+
+function todayStr(): string {
+  return new Date().toISOString().split("T")[0];
+}
+
+function isEventToday(dateStr: string): boolean {
+  return dateStr === todayStr();
+}
+
+function formatEventDate(dateStr: string): { day: string; num: string } {
+  try {
+    const d = new Date(dateStr + "T00:00:00");
+    return {
+      day: d.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase(),
+      num: String(d.getDate()),
+    };
+  } catch {
+    return { day: "?", num: "?" };
+  }
+}
+
+function UpcomingEventRow({
+  event,
+  onPress,
+}: {
+  event: UpcomingEvent;
+  onPress: () => void;
+}) {
+  const colors = useColors();
+  const today = isEventToday(event.date);
+  const { day, num } = formatEventDate(event.date);
+  const dotColor = event.categoryColor ?? colors.primary;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.eventRow,
+        {
+          backgroundColor: today ? colors.primary + "10" : colors.card,
+          borderColor: today ? colors.primary + "40" : colors.border,
+          borderRadius: colors.radius,
+          opacity: pressed ? 0.8 : 1,
+        },
+      ]}
+    >
+      {/* Date chip */}
+      <View
+        style={[
+          styles.dateChip,
+          {
+            backgroundColor: today ? colors.primary : colors.muted,
+            borderRadius: colors.radius / 1.5,
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.dateChipDay,
+            { color: today ? "#fff" : colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
+          ]}
+        >
+          {day}
+        </Text>
+        <Text
+          style={[
+            styles.dateChipNum,
+            { color: today ? "#fff" : colors.foreground, fontFamily: "Inter_700Bold" },
+          ]}
+        >
+          {num}
+        </Text>
+      </View>
+
+      {/* Content */}
+      <View style={styles.eventContent}>
+        <Text
+          style={[
+            styles.eventTitle,
+            { color: today ? colors.primary : colors.foreground, fontFamily: "Inter_600SemiBold" },
+          ]}
+          numberOfLines={1}
+        >
+          {event.title}
+        </Text>
+        <Text
+          style={[styles.eventMeta, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
+          numberOfLines={1}
+        >
+          {event.instanceName}
+          {event.blockTitle ? ` · ${event.blockTitle}` : ""}
+        </Text>
+      </View>
+
+      {/* Today badge + color dot */}
+      <View style={styles.eventRight}>
+        {today && (
+          <View style={[styles.todayBadge, { backgroundColor: colors.primary + "25" }]}>
+            <Text style={[styles.todayBadgeText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
+              TODAY
+            </Text>
+          </View>
+        )}
+        <View style={[styles.colorDot, { backgroundColor: dotColor }]} />
+      </View>
+    </Pressable>
+  );
+}
+
+function UpcomingSection({ onEventPress }: { onEventPress: (event: UpcomingEvent) => void }) {
+  const colors = useColors();
+  const [events, setEvents] = useState<UpcomingEvent[] | null>(null);
+
+  useEffect(() => {
+    const domain = process.env.EXPO_PUBLIC_DOMAIN;
+    const base = domain ? `https://${domain}` : "";
+    fetch(`${base}/api/upcoming-events`)
+      .then((r) => r.json())
+      .then(setEvents)
+      .catch(() => setEvents([]));
+  }, []);
+
+  if (events === null) {
+    return (
+      <View style={styles.upcomingContainer}>
+        <View style={styles.sectionHeader}>
+          <Feather name="calendar" size={13} color={colors.mutedForeground} />
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+            UPCOMING
+          </Text>
+        </View>
+        <View style={[styles.skeleton, { backgroundColor: colors.muted, borderRadius: colors.radius }]} />
+        <View style={[styles.skeleton, { backgroundColor: colors.muted, borderRadius: colors.radius, opacity: 0.6 }]} />
+      </View>
+    );
+  }
+
+  if (events.length === 0) return null;
+
+  return (
+    <View style={styles.upcomingContainer}>
+      <View style={styles.sectionHeader}>
+        <Feather name="calendar" size={13} color={colors.mutedForeground} />
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+          UPCOMING
+        </Text>
+        <Text style={[styles.sectionSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          — next 7 days
+        </Text>
+      </View>
+      <View style={styles.eventList}>
+        {events.map((event) => (
+          <UpcomingEventRow key={event.id} event={event} onPress={() => onEventPress(event)} />
+        ))}
+      </View>
+    </View>
+  );
+}
 
 function CategoryCard({ category, onPress }: { category: Category; onPress: () => void }) {
   const colors = useColors();
@@ -191,7 +363,7 @@ function NewCategoryModal({
                 key={c}
                 onPress={() => setSelectedColor(c)}
                 style={[
-                  styles.colorDot,
+                  styles.colorDotPicker,
                   { backgroundColor: c },
                   selectedColor === c && styles.colorDotSelected,
                 ]}
@@ -243,6 +415,10 @@ export default function HomeScreen() {
   const topPad = isWeb ? 67 : insets.top;
   const bottomPad = isWeb ? 34 : insets.bottom;
 
+  const handleEventPress = (event: UpcomingEvent) => {
+    router.push(`/instances/${event.instanceId}?eventId=${event.id}&blockId=${event.blockId}` as any);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View
@@ -290,7 +466,6 @@ export default function HomeScreen() {
             { paddingBottom: bottomPad + 24 },
             (categories ?? []).length === 0 && styles.listEmpty,
           ]}
-          scrollEnabled={!!(categories && categories.length > 0)}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -298,6 +473,9 @@ export default function HomeScreen() {
               onRefresh={refetch}
               tintColor={colors.primary}
             />
+          }
+          ListHeaderComponent={
+            <UpcomingSection onEventPress={handleEventPress} />
           }
           ListEmptyComponent={
             <View style={styles.emptyState}>
@@ -310,11 +488,31 @@ export default function HomeScreen() {
               </Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <CategoryCard
-              category={item}
-              onPress={() => router.push(`/categories/${item.id}`)}
-            />
+          ListFooterComponent={
+            (categories ?? []).length > 0 ? (
+              <View style={styles.sectionHeader}>
+                <Feather name="folder" size={13} color={colors.mutedForeground} />
+                <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  CATEGORIES
+                </Text>
+              </View>
+            ) : null
+          }
+          renderItem={({ item, index }) => (
+            <>
+              {index === 0 && (
+                <View style={styles.sectionHeader}>
+                  <Feather name="folder" size={13} color={colors.mutedForeground} />
+                  <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    CATEGORIES
+                  </Text>
+                </View>
+              )}
+              <CategoryCard
+                category={item}
+                onPress={() => router.push(`/categories/${item.id}`)}
+              />
+            </>
           )}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         />
@@ -372,11 +570,47 @@ const styles = StyleSheet.create({
   input: { borderWidth: StyleSheet.hairlineWidth, padding: 12, fontSize: 15 },
   inputMulti: { height: 72, textAlignVertical: "top" },
   colorRow: { flexDirection: "row", gap: 10, flexWrap: "wrap", marginVertical: 4 },
-  colorDot: { width: 30, height: 30, borderRadius: 15 },
+  colorDotPicker: { width: 30, height: 30, borderRadius: 15 },
   colorDotSelected: { borderWidth: 3, borderColor: "#fff", shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 4, elevation: 4 },
   sheetActions: { flexDirection: "row", gap: 12, marginTop: 12 },
   btn: { flex: 1, paddingVertical: 14, alignItems: "center", justifyContent: "center" },
   btnCancel: { borderWidth: StyleSheet.hairlineWidth },
   btnPrimary: {},
   btnText: { fontSize: 15 },
+  // Upcoming section
+  upcomingContainer: { marginBottom: 8 },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  sectionLabel: { fontSize: 11, letterSpacing: 1 },
+  sectionSub: { fontSize: 11 },
+  eventList: { gap: 8, marginBottom: 20 },
+  eventRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  dateChip: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 1,
+  },
+  dateChipDay: { fontSize: 9, letterSpacing: 0.5 },
+  dateChipNum: { fontSize: 18, lineHeight: 20 },
+  eventContent: { flex: 1, gap: 2 },
+  eventTitle: { fontSize: 14 },
+  eventMeta: { fontSize: 12 },
+  eventRight: { alignItems: "flex-end", gap: 6 },
+  todayBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  todayBadgeText: { fontSize: 9, letterSpacing: 0.5 },
+  colorDot: { width: 8, height: 8, borderRadius: 4, opacity: 0.5 },
+  skeleton: { height: 56, marginBottom: 8 },
 });

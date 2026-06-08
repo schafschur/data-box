@@ -6,10 +6,11 @@ import {
 import type { Block, CalendarEvent } from "@workspace/api-client-react";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Platform,
   Pressable,
   StyleSheet,
@@ -35,14 +36,60 @@ function formatDate(dateStr: string): string {
   }
 }
 
-function EventRow({ event }: { event: CalendarEvent }) {
+function EventRow({
+  event,
+  highlighted,
+}: {
+  event: CalendarEvent;
+  highlighted: boolean;
+}) {
   const colors = useColors();
+  const pulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!highlighted) return;
+    Animated.sequence([
+      Animated.delay(200),
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulse, { toValue: 1, duration: 500, useNativeDriver: false }),
+          Animated.timing(pulse, { toValue: 0, duration: 500, useNativeDriver: false }),
+        ]),
+        { iterations: 3 }
+      ),
+    ]).start();
+  }, [highlighted, pulse]);
+
+  const highlightBg = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [colors.primary + "00", colors.primary + "20"],
+  });
+
   return (
-    <View style={[styles.eventRow, { borderLeftColor: colors.primary }]}>
+    <Animated.View
+      style={[
+        styles.eventRow,
+        {
+          borderLeftColor: highlighted ? colors.primary : colors.primary,
+          borderLeftWidth: highlighted ? 3 : 3,
+          backgroundColor: highlighted ? highlightBg : "transparent",
+          borderRadius: highlighted ? 4 : 0,
+          paddingRight: highlighted ? 8 : 0,
+        },
+      ]}
+    >
       <Text style={[styles.eventDate, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
         {formatDate(event.date)}
       </Text>
-      <Text style={[styles.eventTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+      <Text
+        style={[
+          styles.eventTitle,
+          {
+            color: highlighted ? colors.primary : colors.foreground,
+            fontFamily: highlighted ? "Inter_700Bold" : "Inter_600SemiBold",
+          },
+        ]}
+      >
         {event.title}
       </Text>
       {event.description ? (
@@ -50,11 +97,17 @@ function EventRow({ event }: { event: CalendarEvent }) {
           {event.description}
         </Text>
       ) : null}
-    </View>
+    </Animated.View>
   );
 }
 
-export function CalendarBlock({ block }: { block: Block }) {
+export function CalendarBlock({
+  block,
+  highlightEventId,
+}: {
+  block: Block;
+  highlightEventId?: number;
+}) {
   const colors = useColors();
   const queryClient = useQueryClient();
   const { data: events, isLoading } = useListCalendarEvents(block.id, {
@@ -113,7 +166,11 @@ export function CalendarBlock({ block }: { block: Block }) {
       ) : (
         <View style={styles.list}>
           {sorted.map((event) => (
-            <EventRow key={event.id} event={event} />
+            <EventRow
+              key={event.id}
+              event={event}
+              highlighted={highlightEventId === event.id}
+            />
           ))}
         </View>
       )}
@@ -203,8 +260,8 @@ const styles = StyleSheet.create({
   list: { gap: 10 },
   eventRow: {
     paddingLeft: 12,
-    borderLeftWidth: 3,
     gap: 2,
+    paddingVertical: 4,
   },
   eventDate: { fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 },
   eventTitle: { fontSize: 15 },

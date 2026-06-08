@@ -26,7 +26,13 @@ function importanceBadgeColor(imp: number): { bg: string; text: string } {
   return { bg: "#FFF1EE", text: "#E87A50" };
 }
 
-export function BlockRenderer({ block }: { block: Block }) {
+export function BlockRenderer({
+  block,
+  highlightEventId,
+}: {
+  block: Block;
+  highlightEventId?: number;
+}) {
   const colors = useColors();
   const icon = BLOCK_TYPE_ICONS[block.type] ?? "box";
   const imp = block.importance;
@@ -67,7 +73,9 @@ export function BlockRenderer({ block }: { block: Block }) {
       <View style={styles.content}>
         {block.type === "richtext" && <RichTextBlock block={block} />}
         {block.type === "todo" && <TodoBlock block={block} />}
-        {block.type === "calendar" && <CalendarBlock block={block} />}
+        {block.type === "calendar" && (
+          <CalendarBlock block={block} highlightEventId={highlightEventId} />
+        )}
         {block.type === "photo" && <PhotoBlock block={block} />}
         {block.type === "pdf" && <PdfBlock block={block} />}
       </View>

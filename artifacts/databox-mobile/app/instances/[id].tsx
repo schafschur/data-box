@@ -6,9 +6,10 @@ import {
 } from "@workspace/api-client-react";
 import type { Block } from "@workspace/api-client-react";
 import { Stack, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   ActivityIndicator,
+  findNodeHandle,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -238,11 +239,21 @@ function NewBlockModal({
 }
 
 export default function InstanceScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, eventId, blockId } = useLocalSearchParams<{
+    id: string;
+    eventId?: string;
+    blockId?: string;
+  }>();
   const instanceId = parseInt(id ?? "0", 10);
+  const highlightEventId = eventId ? parseInt(eventId, 10) : undefined;
+  const highlightBlockId = blockId ? parseInt(blockId, 10) : undefined;
+
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [showModal, setShowModal] = useState(false);
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const blockRefs = useRef<Map<number, View | null>>(new Map());
 
   const { data: instance } = useGetInstance(instanceId, {
     query: { enabled: !!instanceId },
@@ -255,6 +266,27 @@ export default function InstanceScreen() {
   } = useListBlocks(instanceId, {
     query: { enabled: !!instanceId },
   });
+
+  const scrollToBlock = useCallback(() => {
+    if (!highlightBlockId || !scrollViewRef.current) return;
+    const ref = blockRefs.current.get(highlightBlockId);
+    if (!ref) return;
+    const scrollNode = findNodeHandle(scrollViewRef.current);
+    if (!scrollNode) return;
+    ref.measureLayout(
+      scrollNode,
+      (_x, y) => {
+        scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 20), animated: true });
+      },
+      () => {},
+    );
+  }, [highlightBlockId]);
+
+  useEffect(() => {
+    if (!highlightBlockId || !blocks) return;
+    const timer = setTimeout(scrollToBlock, 400);
+    return () => clearTimeout(timer);
+  }, [blocks, highlightBlockId, scrollToBlock]);
 
   const isWeb = Platform.OS === "web";
   const bottomPad = isWeb ? 34 : insets.bottom;
@@ -315,6 +347,7 @@ export default function InstanceScreen() {
           </View>
         ) : (
           <ScrollView
+            ref={scrollViewRef}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[
               styles.scrollContent,
@@ -351,7 +384,17 @@ export default function InstanceScreen() {
             ) : (
               <View style={styles.blockList}>
                 {(blocks ?? []).map((block: Block) => (
-                  <BlockRenderer key={block.id} block={block} />
+                  <View
+                    key={block.id}
+                    ref={(r) => { blockRefs.current.set(block.id, r); }}
+                  >
+                    <BlockRenderer
+                      block={block}
+                      highlightEventId={
+                        block.id === highlightBlockId ? highlightEventId : undefined
+                      }
+                    />
+                  </View>
                 ))}
               </View>
             )}
