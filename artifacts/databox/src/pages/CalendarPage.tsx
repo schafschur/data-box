@@ -172,6 +172,8 @@ function GridEventItem({ event }: { event: CalendarEntry }) {
         "w-full text-left text-[11px] leading-tight px-1.5 py-1 rounded flex flex-col gap-0.5 transition-all",
         isPriority
           ? "bg-orange-50 border border-orange-200 text-orange-900 hover:bg-orange-100"
+          : isMultiDay
+          ? "bg-background border border-border hover:border-primary/30 hover:shadow-sm text-foreground"
           : "hover:bg-muted/80 text-foreground",
       )}
       style={
