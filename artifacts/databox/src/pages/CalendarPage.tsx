@@ -6,8 +6,15 @@ import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, addDays,
 } from "date-fns";
-import { Flame, CalendarDays, ChevronRight, AlignLeft, LayoutGrid, Clock, CalendarRange } from "lucide-react";
+import { Flame, CalendarDays, ChevronRight, AlignLeft, LayoutGrid, Clock, CalendarRange, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, verticalListSortingStrategy, useSortable, arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -20,6 +27,7 @@ interface CalendarEntry {
   endTime: string | null;
   description: string | null;
   highPriority: boolean;
+  sortOrder: number | null;
   blockId: number;
   instanceId: number;
   instanceName: string;
@@ -153,6 +161,34 @@ function TimelineEventCard({ event }: { event: CalendarEntry }) {
       </div>
       <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-muted-foreground/60 shrink-0 mt-2 transition-colors" />
     </button>
+  );
+}
+
+/* ── Sortable wrapper for timeline cards ──────────────────────────── */
+function SortableTimelineEventCard({ event }: { event: CalendarEntry }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: event.id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    position: "relative",
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="group/drag flex items-stretch gap-1">
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex items-center justify-center w-5 shrink-0 cursor-grab active:cursor-grabbing opacity-0 group-hover/drag:opacity-30 hover:!opacity-70 touch-none text-muted-foreground transition-opacity"
+        title="Drag to reorder"
+      >
+        <GripVertical className="h-4 w-4" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <TimelineEventCard event={event} />
+      </div>
+    </div>
   );
 }
 
@@ -336,12 +372,47 @@ export function CalendarPage() {
   const [activeCategoryIds, setActiveCategoryIds] = useState<Set<number> | null>(null);
   const todayRef = useRef<HTMLDivElement>(null);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
   useEffect(() => {
     fetch(`${BASE_URL}/api/all-calendar-events`)
       .then((r) => r.json())
       .then((data: CalendarEntry[]) => { setEvents(data); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  const handleMonthDragEnd = async (dragEvent: DragEndEvent, monthEvents: CalendarEntry[]) => {
+    const { active, over } = dragEvent;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = monthEvents.findIndex((e) => e.id === active.id);
+    const newIndex = monthEvents.findIndex((e) => e.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(monthEvents, oldIndex, newIndex);
+    const items = reordered.map((e, i) => ({ id: e.id, sortOrder: i }));
+
+    setEvents((prev) =>
+      prev.map((ev) => {
+        const found = items.find((s) => s.id === ev.id);
+        return found ? { ...ev, sortOrder: found.sortOrder } : ev;
+      }),
+    );
+
+    try {
+      await fetch(`${BASE_URL}/api/calendar-events/reorder`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      });
+    } catch {
+      fetch(`${BASE_URL}/api/all-calendar-events`)
+        .then((r) => r.json())
+        .then((data: CalendarEntry[]) => setEvents(data));
+    }
+  };
 
   const categories = Array.from(
     new Map(events.map((e) => [e.categoryId, { id: e.categoryId, name: e.categoryName, color: e.categoryColor }])).values()
@@ -482,6 +553,16 @@ export function CalendarPage() {
             {Array.from(groupedByMonth.entries()).map(([monthKey, monthEvents]) => {
               const isCurrentMonth = monthKey === todayMonthKey;
               const label = format(new Date(monthKey + "-01"), "MMMM yyyy");
+              const sorted = [...monthEvents].sort((a, b) => {
+                const aO = a.sortOrder ?? null;
+                const bO = b.sortOrder ?? null;
+                if (aO != null && bO != null) return aO - bO;
+                if (aO != null) return -1;
+                if (bO != null) return 1;
+                if (a.highPriority && !b.highPriority) return -1;
+                if (!a.highPriority && b.highPriority) return 1;
+                return parseISO(a.date).getTime() - parseISO(b.date).getTime();
+              });
               return (
                 <section key={monthKey}>
                   <div
@@ -493,9 +574,17 @@ export function CalendarPage() {
                     <div className="flex-1 h-px bg-border" />
                     <span className="text-xs text-muted-foreground">{monthEvents.length} event{monthEvents.length !== 1 ? "s" : ""}</span>
                   </div>
-                  <div className="space-y-2.5">
-                    {monthEvents.map((ev) => <TimelineEventCard key={ev.id} event={ev} />)}
-                  </div>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={(e) => handleMonthDragEnd(e, sorted)}
+                  >
+                    <SortableContext items={sorted.map((e) => e.id)} strategy={verticalListSortingStrategy}>
+                      <div className="space-y-2.5">
+                        {sorted.map((ev) => <SortableTimelineEventCard key={ev.id} event={ev} />)}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
                 </section>
               );
             })}

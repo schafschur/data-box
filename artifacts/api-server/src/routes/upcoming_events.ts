@@ -104,6 +104,7 @@ router.get("/all-calendar-events", async (_req: Request, res: Response) => {
         endTime:       calendarEventsTable.endTime,
         description:   calendarEventsTable.description,
         highPriority:  calendarEventsTable.highPriority,
+        sortOrder:     calendarEventsTable.sortOrder,
         blockId:       calendarEventsTable.blockId,
         instanceId:    instancesTable.id,
         instanceName:  instancesTable.name,
