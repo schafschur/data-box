@@ -1,7 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { gte, lte, and, asc, eq } from "drizzle-orm";
+import { gte, lte, and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { calendarEventsTable, blocksTable, instancesTable, categoriesTable } from "@workspace/db";
+import { calendarEventsTable, blocksTable, instancesTable, categoriesTable, todoItemsTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -45,6 +45,49 @@ router.get("/upcoming-events", async (_req: Request, res: Response) => {
   } catch (err) {
     console.error("Upcoming events error:", err);
     res.status(500).json({ error: "Failed to fetch upcoming events" });
+  }
+});
+
+/* ── Urgent todo items (due today or tomorrow, not completed) ───────── */
+router.get("/urgent-todos", async (_req: Request, res: Response) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const todayStr    = today.toISOString().split("T")[0];
+    const tomorrowStr = tomorrow.toISOString().split("T")[0];
+
+    const rows = await db
+      .select({
+        id:            todoItemsTable.id,
+        text:          todoItemsTable.text,
+        deadline:      todoItemsTable.deadline,
+        completed:     todoItemsTable.completed,
+        blockId:       todoItemsTable.blockId,
+        blockTitle:    blocksTable.title,
+        instanceId:    instancesTable.id,
+        instanceName:  instancesTable.name,
+        categoryId:    categoriesTable.id,
+        categoryName:  categoriesTable.name,
+        categoryColor: categoriesTable.color,
+      })
+      .from(todoItemsTable)
+      .innerJoin(blocksTable,     eq(todoItemsTable.blockId, blocksTable.id))
+      .innerJoin(instancesTable,  eq(blocksTable.instanceId, instancesTable.id))
+      .innerJoin(categoriesTable, eq(instancesTable.categoryId, categoriesTable.id))
+      .where(
+        and(
+          inArray(todoItemsTable.deadline, [todayStr, tomorrowStr]),
+          eq(todoItemsTable.completed, false)
+        )
+      )
+      .orderBy(asc(todoItemsTable.deadline), asc(todoItemsTable.id));
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Urgent todos error:", err);
+    res.status(500).json({ error: "Failed to fetch urgent todos" });
   }
 });
 
