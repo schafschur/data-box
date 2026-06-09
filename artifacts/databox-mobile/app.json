@@ -14,7 +14,8 @@
       "backgroundColor": "#FDFBF7"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.schafschur.databox"
     },
     "android": {},
     "web": {
