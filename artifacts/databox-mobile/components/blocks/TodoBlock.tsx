@@ -19,6 +19,31 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { useColors } from "@/hooks/useColors";
 
+function formatDeadline(deadline: string): string {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(deadline + "T00:00:00");
+  const diffDays = Math.round((due.getTime() - today.getTime()) / 86400000);
+
+  if (diffDays === 0) return "Due today";
+  if (diffDays === 1) return "Due tomorrow";
+  if (diffDays === -1) return "Due yesterday";
+  if (diffDays < 0) return `${Math.abs(diffDays)}d overdue`;
+  if (diffDays <= 6) return `Due in ${diffDays}d`;
+
+  return due.toLocaleDateString(undefined, { month: "short", day: "numeric", year: due.getFullYear() !== today.getFullYear() ? "numeric" : undefined });
+}
+
+function deadlineColor(deadline: string, colors: ReturnType<typeof useColors>): string {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(deadline + "T00:00:00");
+  const diffDays = Math.round((due.getTime() - today.getTime()) / 86400000);
+  if (diffDays < 0) return "#ef4444";
+  if (diffDays <= 2) return "#f97316";
+  return colors.mutedForeground;
+}
+
 function TodoItemRow({ item, blockId }: { item: TodoItem; blockId: number }) {
   const colors = useColors();
   const queryClient = useQueryClient();
@@ -40,6 +65,8 @@ function TodoItemRow({ item, blockId }: { item: TodoItem; blockId: number }) {
     );
   };
 
+  const dColor = item.deadline ? deadlineColor(item.deadline, colors) : colors.mutedForeground;
+
   return (
     <Pressable
       onPress={handleToggle}
@@ -60,18 +87,28 @@ function TodoItemRow({ item, blockId }: { item: TodoItem; blockId: number }) {
           <Feather name="check" size={12} color={colors.primaryForeground} />
         )}
       </View>
-      <Text
-        style={[
-          styles.itemText,
-          {
-            color: item.completed ? colors.mutedForeground : colors.foreground,
-            fontFamily: "Inter_400Regular",
-            textDecorationLine: item.completed ? "line-through" : "none",
-          },
-        ]}
-      >
-        {item.text}
-      </Text>
+      <View style={styles.itemBody}>
+        <Text
+          style={[
+            styles.itemText,
+            {
+              color: item.completed ? colors.mutedForeground : colors.foreground,
+              fontFamily: "Inter_400Regular",
+              textDecorationLine: item.completed ? "line-through" : "none",
+            },
+          ]}
+        >
+          {item.text}
+        </Text>
+        {item.deadline && !item.completed && (
+          <View style={styles.deadlineRow}>
+            <Feather name="clock" size={11} color={dColor} />
+            <Text style={[styles.deadlineText, { color: dColor, fontFamily: "Inter_400Regular" }]}>
+              {formatDeadline(item.deadline)}
+            </Text>
+          </View>
+        )}
+      </View>
     </Pressable>
   );
 }
@@ -120,7 +157,7 @@ const styles = StyleSheet.create({
   list: { gap: 0 },
   row: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 10,
     paddingVertical: 8,
   },
@@ -130,11 +167,24 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
+    marginTop: 2,
+  },
+  itemBody: {
+    flex: 1,
+    gap: 3,
   },
   itemText: {
     fontSize: 15,
-    flex: 1,
     lineHeight: 20,
+  },
+  deadlineRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  deadlineText: {
+    fontSize: 12,
+    lineHeight: 16,
   },
   progress: {
     fontSize: 12,
