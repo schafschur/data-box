@@ -10,10 +10,12 @@ import { BlockRenderer } from "@/components/blocks/BlockRenderer";
 import { AnalysisPanel } from "@/components/blocks/AnalysisPanel";
 import { MapView } from "@/components/blocks/MapView";
 import { InstanceSearch } from "@/components/blocks/InstanceSearch";
-import { Settings, Trash2, Edit, ChevronRight, BarChart2, Layers, Network } from "lucide-react";
+import { Settings, Trash2, Edit, ChevronRight, BarChart2, Layers, Network, Download } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export function InstanceDetail() {
   const { instanceId } = useParams();
@@ -118,6 +120,16 @@ export function InstanceDetail() {
 
           <div className="flex items-center gap-2">
             <CreateBlockDialog instanceId={id} />
+            {instance && (
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Export instance as PDF"
+                onClick={() => window.open(`${API_BASE}/api/instances/${id}/export/pdf`)}
+              >
+                <Download className="w-4 h-4" />
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">

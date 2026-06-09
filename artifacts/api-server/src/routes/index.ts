@@ -14,6 +14,7 @@ import searchRouter from "./search";
 import upcomingEventsRouter from "./upcoming_events";
 import contactCardsRouter from "./contact_cards";
 import listItemsRouter from "./list_items";
+import exportPdfRouter from "./export_pdf";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(searchRouter);
 router.use(upcomingEventsRouter);
 router.use(contactCardsRouter);
 router.use(listItemsRouter);
+router.use(exportPdfRouter);
 
 export default router;

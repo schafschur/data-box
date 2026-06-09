@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, type ComponentType } from "react";
 import { Block, useDeleteBlock, useUpdateBlock, getListBlocksQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { Trash2, FileText, CheckSquare, Calendar, Image as ImageIcon, Check, Flame, BookOpen, Users, List } from "lucide-react";
+import { Trash2, FileText, CheckSquare, Calendar, Image as ImageIcon, Check, Flame, BookOpen, Users, List, Download } from "lucide-react";
 import { RichTextBlock } from "./RichTextBlock";
 import { TodoBlock } from "./TodoBlock";
 import { CalendarBlock } from "./CalendarBlock";
@@ -12,6 +12,8 @@ import { ListBlock } from "./ListBlock";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const ICONS: Record<string, ComponentType<{ className?: string }>> = {
   richtext: FileText,
@@ -205,6 +207,16 @@ export function BlockRenderer({ block }: BlockRendererProps) {
                 </div>
               )}
             </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground"
+              title="Export block as PDF"
+              onClick={() => window.open(`${API_BASE}/api/blocks/${block.id}/export/pdf`)}
+            >
+              <Download className="w-4 h-4" />
+            </Button>
 
             <Button
               variant="ghost"

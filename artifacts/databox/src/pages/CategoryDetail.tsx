@@ -7,12 +7,14 @@ import { EditCategoryDialog } from "@/components/forms/EditCategoryDialog";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Settings, Trash2, Edit, GripVertical } from "lucide-react";
+import { Settings, Trash2, Edit, GripVertical, Download } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useDrag, type DragState } from "@/contexts/DragContext";
 import type { InstanceWithBlockCount, Category } from "@workspace/api-client-react";
+
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function DraggableInstanceCard({
   instance,
@@ -154,6 +156,17 @@ export function CategoryDetail() {
 
           <div className="flex items-center gap-2">
             <CreateInstanceDialog categoryId={id} />
+
+            {category && (
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Export category as PDF"
+                onClick={() => window.open(`${API_BASE}/api/categories/${id}/export/pdf`)}
+              >
+                <Download className="w-4 h-4" />
+              </Button>
+            )}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
