@@ -114,15 +114,17 @@ function EventRow({
             : "bg-muted/30 border-border",
         )}
       >
-        {/* Row 1: title + start date */}
-        <div className="flex items-center gap-2">
-          <Input
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            placeholder="Event title"
-            className="flex-1 h-8 text-sm"
-            autoFocus
-          />
+        {/* Row 1: title only */}
+        <Input
+          value={editTitle}
+          onChange={(e) => setEditTitle(e.target.value)}
+          placeholder="Event title"
+          className="w-full h-8 text-sm"
+          autoFocus
+        />
+
+        {/* Row 2: start date + end date + time range */}
+        <div className="flex items-end gap-2 flex-wrap">
           <div className="flex flex-col gap-0.5">
             <label className="text-[10px] text-muted-foreground uppercase tracking-wider pl-0.5">Start date</label>
             <Input
@@ -132,10 +134,6 @@ function EventRow({
               className="w-[148px] h-8 text-sm"
             />
           </div>
-        </div>
-
-        {/* Row 2: end date + time range */}
-        <div className="flex items-end gap-2 flex-wrap">
           <div className="flex flex-col gap-0.5">
             <label className="text-[10px] text-muted-foreground uppercase tracking-wider pl-0.5">End date <span className="normal-case">(optional)</span></label>
             <Input
