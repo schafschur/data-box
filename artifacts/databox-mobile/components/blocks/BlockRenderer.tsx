@@ -10,6 +10,7 @@ import { CalendarBlock } from "./CalendarBlock";
 import { PhotoBlock } from "./PhotoBlock";
 import { PdfBlock } from "./PdfBlock";
 import { ListBlock } from "./ListBlock";
+import { ContactBlock } from "./ContactBlock";
 
 const BLOCK_TYPE_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   richtext: "file-text",
@@ -18,6 +19,7 @@ const BLOCK_TYPE_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   photo: "image",
   pdf: "book-open",
   list: "list",
+  contact: "users",
 };
 
 function importanceBadgeColor(imp: number): { bg: string; text: string } {
@@ -81,6 +83,7 @@ export function BlockRenderer({
         {block.type === "photo" && <PhotoBlock block={block} />}
         {block.type === "pdf" && <PdfBlock block={block} />}
         {block.type === "list" && <ListBlock block={block} />}
+        {block.type === "contact" && <ContactBlock block={block} />}
       </View>
     </View>
   );
