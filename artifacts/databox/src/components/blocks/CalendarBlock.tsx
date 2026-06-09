@@ -411,27 +411,25 @@ export function CalendarBlock({ block }: { block: Block }) {
 
       {/* Add form */}
       <form onSubmit={handleAdd} className="space-y-2 pt-4 border-t border-border/50">
-        {/* Row 1: title + start date */}
-        <div className="flex items-center gap-2">
-          <Input
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            placeholder="Event title"
-            className="flex-1"
-          />
+        {/* Row 1: title only */}
+        <Input
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+          placeholder="Event title"
+          className="w-full"
+        />
+
+        {/* Row 2: start date + end date + time range + add button */}
+        <div className="flex items-end gap-2 flex-wrap">
           <div className="flex flex-col gap-0.5">
             <label className="text-[10px] text-muted-foreground uppercase tracking-wider pl-0.5">Start</label>
             <Input
               type="date"
               value={newDate}
               onChange={(e) => setNewDate(e.target.value)}
-              className="w-[148px]"
+              className="w-[148px] h-9 text-sm"
             />
           </div>
-        </div>
-
-        {/* Row 2: end date + time range + add button */}
-        <div className="flex items-end gap-2 flex-wrap">
           <div className="flex flex-col gap-0.5">
             <label className="text-[10px] text-muted-foreground uppercase tracking-wider pl-0.5">End date <span className="normal-case opacity-70">(opt)</span></label>
             <Input
