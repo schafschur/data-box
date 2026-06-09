@@ -122,20 +122,35 @@ function SortableTodoItem({
         </span>
 
         {editingDeadline ? (
-          <div className="flex items-center gap-1 mt-1" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap" onClick={(e) => e.stopPropagation()}>
             <Input
               type="date"
               value={deadlineInput}
               onChange={(e) => setDeadlineInput(e.target.value)}
-              className="h-6 text-xs w-[140px] px-1.5"
+              className="h-7 text-xs w-[148px] px-1.5"
               autoFocus
               onKeyDown={(e) => { if (e.key === "Enter") handleDeadlineSave(); if (e.key === "Escape") setEditingDeadline(false); }}
             />
-            <button onClick={handleDeadlineSave} className="text-primary hover:text-primary/80"><Check className="h-3.5 w-3.5" /></button>
+            <button
+              onClick={handleDeadlineSave}
+              className="text-xs font-medium px-2 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              Save
+            </button>
             {item.deadline && (
-              <button onClick={handleDeadlineClear} className="text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
+              <button
+                onClick={handleDeadlineClear}
+                className="text-xs px-2 py-1 rounded border border-border text-muted-foreground hover:text-destructive hover:border-destructive transition-colors"
+              >
+                Clear
+              </button>
             )}
-            <button onClick={() => setEditingDeadline(false)} className="text-muted-foreground hover:text-foreground text-xs">cancel</button>
+            <button
+              onClick={() => setEditingDeadline(false)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Cancel
+            </button>
           </div>
         ) : dl && !item.completed ? (
           <div className="flex items-center gap-1 mt-0.5">
