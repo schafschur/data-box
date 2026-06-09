@@ -355,11 +355,25 @@ router.get("/instances/:instanceId/export/pdf", async (req: Request, res: Respon
     const [instance] = await db.select().from(instancesTable).where(eq(instancesTable.id, instanceId));
     if (!instance) { res.status(404).json({ error: "Instance not found" }); return; }
 
-    const blocks = await db
+    const rawBlockIds = req.query.blockIds;
+    let selectedBlockIds: number[] | null = null;
+    if (rawBlockIds) {
+      const ids = (Array.isArray(rawBlockIds) ? rawBlockIds : [rawBlockIds])
+        .flatMap((s) => String(s).split(","))
+        .map((s) => parseInt(s, 10))
+        .filter((n) => !isNaN(n));
+      if (ids.length > 0) selectedBlockIds = ids;
+    }
+
+    const allBlocks = await db
       .select()
       .from(blocksTable)
       .where(eq(blocksTable.instanceId, instanceId))
       .orderBy(asc(blocksTable.position));
+
+    const blocks = selectedBlockIds
+      ? allBlocks.filter((b) => selectedBlockIds!.includes(b.id))
+      : allBlocks;
 
     const blockDataList = await Promise.all(blocks.map(fetchBlockData));
 

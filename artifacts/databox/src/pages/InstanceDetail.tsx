@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { CreateBlockDialog } from "@/components/forms/CreateBlockDialog";
 import { EditInstanceDialog } from "@/components/forms/EditInstanceDialog";
+import { ExportBlocksDialog } from "@/components/forms/ExportBlocksDialog";
 import { BlockRenderer } from "@/components/blocks/BlockRenderer";
 import { AnalysisPanel } from "@/components/blocks/AnalysisPanel";
 import { MapView } from "@/components/blocks/MapView";
@@ -24,6 +25,7 @@ export function InstanceDetail() {
   const queryClient = useQueryClient();
 
   const [editOpen, setEditOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"blocks" | "analysis" | "map">("blocks");
   const [highlightedBlockId, setHighlightedBlockId] = useState<number | null>(null);
 
@@ -125,7 +127,7 @@ export function InstanceDetail() {
                 variant="ghost"
                 size="icon"
                 title="Export instance as PDF"
-                onClick={() => window.open(`${API_BASE}/api/instances/${id}/export/pdf`)}
+                onClick={() => setExportOpen(true)}
               >
                 <Download className="w-4 h-4" />
               </Button>
@@ -156,6 +158,13 @@ export function InstanceDetail() {
             instance={instance}
           />
         )}
+
+        <ExportBlocksDialog
+          open={exportOpen}
+          onOpenChange={setExportOpen}
+          blocks={blocks ?? []}
+          exportUrl={`${API_BASE}/api/instances/${id}/export/pdf`}
+        />
 
         {/* Instance-scoped search */}
         {hasBlocks && (
