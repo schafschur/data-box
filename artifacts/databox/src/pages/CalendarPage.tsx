@@ -277,6 +277,10 @@ function MonthGrid({ monthKey, events, isCurrentMonth, todayRef }: {
       eventsByDate.get(key)!.push(ev);
     }
   }
+  // Sort each day's events by start time (no time → treated as "00:00", sorts first)
+  for (const bucket of eventsByDate.values()) {
+    bucket.sort((a, b) => (a.startTime ?? "").localeCompare(b.startTime ?? ""));
+  }
 
   return (
     <section>
