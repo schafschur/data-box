@@ -31,6 +31,19 @@ const COLOR_PALETTE = [
   "#96CEB4", "#FFEAA7", "#DDA0DD", "#98D8C8",
 ];
 
+interface UrgentTodo {
+  id: number;
+  text: string;
+  deadline: string;
+  blockId: number;
+  blockTitle: string | null;
+  instanceId: number;
+  instanceName: string;
+  categoryId: number;
+  categoryName: string;
+  categoryColor: string | null;
+}
+
 interface UpcomingEvent {
   id: number;
   title: string;
@@ -45,9 +58,134 @@ interface UpcomingEvent {
   categoryColor: string | null;
 }
 
+const AMBER = "#D97706";
+const AMBER_LIGHT = "#FEF3C7";
+const AMBER_CHIP_TODAY = "#F59E0B";
+
 function todayStr(): string {
   return new Date().toISOString().split("T")[0];
 }
+
+function tomorrowStr(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split("T")[0];
+}
+
+function formatDeadlineChip(dateStr: string): { label: string; num: string } {
+  try {
+    const d = new Date(dateStr + "T00:00:00");
+    const today = todayStr();
+    const tmrw = tomorrowStr();
+    return {
+      label: dateStr === today ? "Today" : dateStr === tmrw ? "Tmrw" : d.toLocaleDateString(undefined, { weekday: "short" }),
+      num: String(d.getDate()),
+    };
+  } catch {
+    return { label: "?", num: "?" };
+  }
+}
+
+function DueSoonSection({ onTodoPress }: { onTodoPress: (instanceId: number) => void }) {
+  const colors = useColors();
+  const [todos, setTodos] = useState<UrgentTodo[] | null>(null);
+
+  useEffect(() => {
+    const domain = process.env.EXPO_PUBLIC_DOMAIN;
+    const base = domain ? `https://${domain}` : "";
+    fetch(`${base}/api/urgent-todos`)
+      .then((r) => r.json())
+      .then(setTodos)
+      .catch(() => setTodos([]));
+  }, []);
+
+  if (todos === null) {
+    return (
+      <View style={dueSoonStyles.container}>
+        <View style={styles.sectionHeader}>
+          <Feather name="clock" size={13} color={AMBER} />
+          <Text style={[styles.sectionLabel, { color: AMBER, fontFamily: "Inter_600SemiBold" }]}>
+            DUE SOON
+          </Text>
+        </View>
+        <View style={[styles.skeleton, { backgroundColor: colors.muted, borderRadius: colors.radius }]} />
+        <View style={[styles.skeleton, { backgroundColor: colors.muted, borderRadius: colors.radius, opacity: 0.6 }]} />
+      </View>
+    );
+  }
+
+  if (todos.length === 0) return null;
+
+  return (
+    <View style={dueSoonStyles.container}>
+      <View style={styles.sectionHeader}>
+        <Feather name="clock" size={13} color={AMBER} />
+        <Text style={[styles.sectionLabel, { color: AMBER, fontFamily: "Inter_600SemiBold" }]}>
+          DUE SOON
+        </Text>
+      </View>
+      <View style={styles.eventList}>
+        {todos.map((todo) => {
+          const isToday = todo.deadline === todayStr();
+          const { label, num } = formatDeadlineChip(todo.deadline);
+          const dotColor = todo.categoryColor ?? colors.primary;
+          return (
+            <Pressable
+              key={todo.id}
+              onPress={() => onTodoPress(todo.instanceId)}
+              style={({ pressed }) => [
+                styles.eventRow,
+                {
+                  backgroundColor: isToday ? "#FEF3C7" : "#FFFBEB",
+                  borderColor: isToday ? "#FCD34D" : "#FDE68A",
+                  borderRadius: colors.radius,
+                  opacity: pressed ? 0.8 : 1,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.dateChip,
+                  {
+                    backgroundColor: isToday ? AMBER_CHIP_TODAY : AMBER_LIGHT,
+                    borderRadius: colors.radius / 1.5,
+                  },
+                ]}
+              >
+                <Text style={[styles.dateChipDay, { color: isToday ? "#fff" : AMBER, fontFamily: "Inter_600SemiBold" }]}>
+                  {label}
+                </Text>
+                <Text style={[styles.dateChipNum, { color: isToday ? "#fff" : AMBER, fontFamily: "Inter_700Bold" }]}>
+                  {num}
+                </Text>
+              </View>
+              <View style={styles.eventContent}>
+                <Text
+                  style={[styles.eventTitle, { color: isToday ? "#92400E" : "#78350F", fontFamily: "Inter_600SemiBold" }]}
+                  numberOfLines={1}
+                >
+                  {todo.text}
+                </Text>
+                <Text
+                  style={[styles.eventMeta, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
+                  numberOfLines={1}
+                >
+                  {todo.instanceName}
+                  {todo.blockTitle ? ` · ${todo.blockTitle}` : ""}
+                </Text>
+              </View>
+              <View style={[styles.colorDot, { backgroundColor: dotColor }]} />
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+const dueSoonStyles = StyleSheet.create({
+  container: { marginBottom: 8 },
+});
 
 function isEventToday(dateStr: string): boolean {
   return dateStr === todayStr();
@@ -419,6 +557,10 @@ export default function HomeScreen() {
     router.push(`/instances/${event.instanceId}?eventId=${event.id}&blockId=${event.blockId}` as any);
   };
 
+  const handleTodoPress = (instanceId: number) => {
+    router.push(`/instances/${instanceId}` as any);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View
@@ -475,7 +617,10 @@ export default function HomeScreen() {
             />
           }
           ListHeaderComponent={
-            <UpcomingSection onEventPress={handleEventPress} />
+            <>
+              <DueSoonSection onTodoPress={handleTodoPress} />
+              <UpcomingSection onEventPress={handleEventPress} />
+            </>
           }
           ListEmptyComponent={
             <View style={styles.emptyState}>
