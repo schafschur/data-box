@@ -277,9 +277,19 @@ function MonthGrid({ monthKey, events, isCurrentMonth, todayRef }: {
       eventsByDate.get(key)!.push(ev);
     }
   }
-  // Sort each day's events by start time (no time → treated as "00:00", sorts first)
-  for (const bucket of eventsByDate.values()) {
-    bucket.sort((a, b) => (a.startTime ?? "").localeCompare(b.startTime ?? ""));
+  // Sort each day's bucket:
+  //   middle days (multi-day event fully covers the day) → top
+  //   start day / single-day events                      → by start time
+  //   end day                                            → by end time (bottom)
+  const dayRole = (ev: CalendarEntry, dayKey: string): string => {
+    const isMulti = ev.endDate && ev.endDate !== ev.date;
+    if (!isMulti) return "1:" + (ev.startTime ?? "");      // single-day: by start time
+    if (ev.date === dayKey)    return "1:" + (ev.startTime ?? ""); // start day: by start time
+    if (ev.endDate === dayKey) return "2:" + (ev.endTime  ?? "23:59"); // end day: by end time
+    return "0:";                                            // middle day: top
+  };
+  for (const [dayKey, bucket] of eventsByDate.entries()) {
+    bucket.sort((a, b) => dayRole(a, dayKey).localeCompare(dayRole(b, dayKey)));
   }
 
   return (
