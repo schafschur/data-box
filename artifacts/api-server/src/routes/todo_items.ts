@@ -42,6 +42,19 @@ router.post("/blocks/:blockId/todo-items", async (req: Request, res: Response) =
   res.status(201).json(row);
 });
 
+router.put("/blocks/:blockId/todo-items/reorder", async (req: Request, res: Response) => {
+  const blockId = parseInt(req.params.blockId, 10);
+  if (isNaN(blockId)) { res.status(400).json({ error: "Invalid blockId" }); return; }
+  const { ids } = req.body;
+  if (!Array.isArray(ids)) { res.status(400).json({ error: "ids must be an array" }); return; }
+  await Promise.all(
+    (ids as number[]).map((id, index) =>
+      db.update(todoItemsTable).set({ position: index, updatedAt: new Date() }).where(eq(todoItemsTable.id, id))
+    )
+  );
+  res.status(204).end();
+});
+
 router.put("/todo-items/:id", async (req: Request, res: Response) => {
   const { id } = UpdateTodoItemParams.parse(req.params);
   const parsed = UpdateTodoItemBody.safeParse(req.body);

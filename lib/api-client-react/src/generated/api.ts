@@ -2857,6 +2857,31 @@ export const useDeleteListItem = <TError = ErrorType<unknown>, TContext = unknow
     ...options?.mutation,
   });
 
+export const getReorderTodoItemsUrl = (blockId: number) =>
+  `/api/blocks/${blockId}/todo-items/reorder`;
+
+export const reorderTodoItems = async (
+  blockId: number,
+  data: { ids: number[] },
+  options?: SecondParameter<typeof customFetch>
+): Promise<void> =>
+  customFetch<void>(getReorderTodoItemsUrl(blockId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...(options as RequestInit | undefined)?.headers },
+    body: JSON.stringify(data),
+  });
+
+export const useReorderTodoItems = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<void, TError, { blockId: number; data: { ids: number[] } }, TContext>;
+  }
+): UseMutationResult<void, TError, { blockId: number; data: { ids: number[] } }, TContext> =>
+  useMutation({
+    mutationFn: ({ blockId, data }) => reorderTodoItems(blockId, data),
+    ...options?.mutation,
+  });
+
 export const getReorderListItemsUrl = (blockId: number) =>
   `/api/blocks/${blockId}/list-items/reorder`;
 
