@@ -174,17 +174,20 @@ export interface TodoItem {
   text: string;
   completed: boolean;
   position: number;
+  deadline?: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface TodoItemInput {
   text: string;
+  deadline?: string | null;
 }
 
 export interface TodoItemUpdate {
   text?: string;
   completed?: boolean;
+  deadline?: string | null;
 }
 
 export interface CalendarEvent {

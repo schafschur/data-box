@@ -325,6 +325,7 @@ export const ListTodoItemsResponseItem = zod.object({
   "text": zod.string(),
   "completed": zod.boolean(),
   "position": zod.number(),
+  "deadline": zod.string().nullable().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -339,7 +340,8 @@ export const CreateTodoItemParams = zod.object({
 })
 
 export const CreateTodoItemBody = zod.object({
-  "text": zod.string()
+  "text": zod.string(),
+  "deadline": zod.string().nullable().optional()
 })
 
 
@@ -352,7 +354,8 @@ export const UpdateTodoItemParams = zod.object({
 
 export const UpdateTodoItemBody = zod.object({
   "text": zod.string().optional(),
-  "completed": zod.boolean().optional()
+  "completed": zod.boolean().optional(),
+  "deadline": zod.string().nullable().optional()
 })
 
 export const UpdateTodoItemResponse = zod.object({
@@ -361,6 +364,7 @@ export const UpdateTodoItemResponse = zod.object({
   "text": zod.string(),
   "completed": zod.boolean(),
   "position": zod.number(),
+  "deadline": zod.string().nullable().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })

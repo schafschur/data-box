@@ -9,6 +9,7 @@ export const todoItemsTable = pgTable("todo_items", {
   text: text("text").notNull(),
   completed: boolean("completed").notNull().default(false),
   position: integer("position").notNull().default(0),
+  deadline: text("deadline"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

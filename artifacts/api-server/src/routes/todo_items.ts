@@ -35,9 +35,10 @@ router.post("/blocks/:blockId/todo-items", async (req: Request, res: Response) =
     .from(todoItemsTable)
     .where(eq(todoItemsTable.blockId, blockId));
   const position = existing.length;
+  const { text, deadline } = parsed.data;
   const [row] = await db
     .insert(todoItemsTable)
-    .values({ ...parsed.data, blockId, position })
+    .values({ text, deadline: deadline ?? null, blockId, position })
     .returning();
   res.status(201).json(row);
 });
