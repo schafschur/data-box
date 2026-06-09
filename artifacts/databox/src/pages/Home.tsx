@@ -5,15 +5,23 @@ import { CreateCategoryDialog } from "@/components/forms/CreateCategoryDialog";
 import { Link } from "wouter";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Folder, CalendarDays, CalendarClock } from "lucide-react";
+import { Folder, CalendarDays, CalendarClock, GripVertical } from "lucide-react";
 import { format, isToday, isTomorrow, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, verticalListSortingStrategy, useSortable, arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface UpcomingEvent {
   id: number;
   title: string;
   date: string;
   description: string | null;
+  sortOrder: number | null;
   blockId: number;
   blockTitle: string | null;
   instanceId: number;
@@ -21,6 +29,77 @@ interface UpcomingEvent {
   categoryId: number;
   categoryName: string;
   categoryColor: string | null;
+}
+
+function UpcomingEventCard({ event }: { event: UpcomingEvent }) {
+  const eventDate    = parseISO(event.date);
+  const isEventToday = isToday(eventDate);
+  return (
+    <Link href={`/instances/${event.instanceId}#event-${event.id}`}>
+      <div
+        className={cn(
+          "flex items-center gap-4 p-3 rounded-lg border cursor-pointer transition-all hover:shadow-sm hover:border-primary/40 group",
+          isEventToday ? "bg-primary/5 border-primary/20" : "bg-card border-border hover:bg-muted/20",
+        )}
+      >
+        <div
+          className={cn(
+            "w-12 h-12 flex flex-col items-center justify-center rounded-lg shrink-0",
+            isEventToday ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+          )}
+        >
+          <span className="text-[10px] uppercase font-semibold tracking-wide leading-none mb-0.5">
+            {format(eventDate, "EEE")}
+          </span>
+          <span className="text-xl font-serif leading-none">{format(eventDate, "d")}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className={cn("font-medium text-sm truncate transition-colors group-hover:text-primary", isEventToday && "text-primary")}>
+            {event.title}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">
+            {event.instanceName}
+            {event.blockTitle && <span className="opacity-60"> · {event.blockTitle}</span>}
+          </p>
+        </div>
+        {isEventToday && (
+          <span className="text-[10px] uppercase tracking-wider bg-primary/20 text-primary px-1.5 py-0.5 rounded font-bold shrink-0">
+            Today
+          </span>
+        )}
+        <div
+          className="w-2 h-2 rounded-full shrink-0 opacity-40 group-hover:opacity-70 transition-opacity"
+          style={{ backgroundColor: event.categoryColor || "var(--primary)" }}
+        />
+      </div>
+    </Link>
+  );
+}
+
+function SortableUpcomingEventCard({ event }: { event: UpcomingEvent }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: event.id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    position: "relative",
+    zIndex: isDragging ? 10 : undefined,
+  };
+  return (
+    <div ref={setNodeRef} style={style} className="group/drag flex items-stretch gap-1">
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex items-center justify-center w-5 shrink-0 cursor-grab active:cursor-grabbing opacity-0 group-hover/drag:opacity-30 hover:!opacity-70 touch-none text-muted-foreground transition-opacity"
+        title="Drag to reorder"
+      >
+        <GripVertical className="h-4 w-4" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <UpcomingEventCard event={event} />
+      </div>
+    </div>
+  );
 }
 
 interface UrgentTodo {
@@ -121,12 +200,43 @@ function UrgentTodosSection() {
 function UpcomingSection() {
   const [events, setEvents] = useState<UpcomingEvent[] | null>(null);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
   useEffect(() => {
     fetch("/api/upcoming-events")
       .then((r) => r.json())
       .then(setEvents)
       .catch(() => setEvents([]));
   }, []);
+
+  const handleDragEnd = async (dragEvent: DragEndEvent) => {
+    if (!events) return;
+    const { active, over } = dragEvent;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = sorted.findIndex((e) => e.id === active.id);
+    const newIndex = sorted.findIndex((e) => e.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(sorted, oldIndex, newIndex);
+    const items = reordered.map((e, i) => ({ id: e.id, sortOrder: i }));
+
+    setEvents(reordered.map((e, i) => ({ ...e, sortOrder: i })));
+
+    try {
+      await fetch("/api/calendar-events/reorder", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      });
+    } catch {
+      fetch("/api/upcoming-events")
+        .then((r) => r.json())
+        .then(setEvents);
+    }
+  };
 
   if (events === null) {
     return (
@@ -146,6 +256,15 @@ function UpcomingSection() {
 
   if (events.length === 0) return null;
 
+  const sorted = [...events].sort((a, b) => {
+    const aO = a.sortOrder ?? null;
+    const bO = b.sortOrder ?? null;
+    if (aO != null && bO != null) return aO - bO;
+    if (aO != null) return -1;
+    if (bO != null) return 1;
+    return parseISO(a.date).getTime() - parseISO(b.date).getTime();
+  });
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
@@ -156,72 +275,15 @@ function UpcomingSection() {
         <span className="text-xs text-muted-foreground">— next 7 days</span>
       </div>
 
-      <div className="space-y-2">
-        {events.map((event) => {
-          const eventDate = parseISO(event.date);
-          const isEventToday = isToday(eventDate);
-
-          return (
-            <Link
-              key={event.id}
-              href={`/instances/${event.instanceId}#event-${event.id}`}
-            >
-              <div
-                className={cn(
-                  "flex items-center gap-4 p-3 rounded-lg border cursor-pointer transition-all hover:shadow-sm hover:border-primary/40 group",
-                  isEventToday
-                    ? "bg-primary/5 border-primary/20"
-                    : "bg-card border-border hover:bg-muted/20",
-                )}
-              >
-                <div
-                  className={cn(
-                    "w-12 h-12 flex flex-col items-center justify-center rounded-lg shrink-0",
-                    isEventToday
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground",
-                  )}
-                >
-                  <span className="text-[10px] uppercase font-semibold tracking-wide leading-none mb-0.5">
-                    {format(eventDate, "EEE")}
-                  </span>
-                  <span className="text-xl font-serif leading-none">
-                    {format(eventDate, "d")}
-                  </span>
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <p
-                    className={cn(
-                      "font-medium text-sm truncate transition-colors group-hover:text-primary",
-                      isEventToday && "text-primary",
-                    )}
-                  >
-                    {event.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                    {event.instanceName}
-                    {event.blockTitle && (
-                      <span className="opacity-60"> · {event.blockTitle}</span>
-                    )}
-                  </p>
-                </div>
-
-                {isEventToday && (
-                  <span className="text-[10px] uppercase tracking-wider bg-primary/20 text-primary px-1.5 py-0.5 rounded font-bold shrink-0">
-                    Today
-                  </span>
-                )}
-
-                <div
-                  className="w-2 h-2 rounded-full shrink-0 opacity-40 group-hover:opacity-70 transition-opacity"
-                  style={{ backgroundColor: event.categoryColor || "var(--primary)" }}
-                />
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={sorted.map((e) => e.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-2">
+            {sorted.map((event) => (
+              <SortableUpcomingEventCard key={event.id} event={event} />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
     </div>
   );
 }

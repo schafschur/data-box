@@ -21,6 +21,7 @@ router.get("/upcoming-events", async (_req: Request, res: Response) => {
         title: calendarEventsTable.title,
         date: calendarEventsTable.date,
         description: calendarEventsTable.description,
+        sortOrder: calendarEventsTable.sortOrder,
         blockId: calendarEventsTable.blockId,
         blockTitle: blocksTable.title,
         instanceId: instancesTable.id,
