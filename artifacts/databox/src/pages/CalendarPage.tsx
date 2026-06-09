@@ -309,7 +309,14 @@ export function CalendarPage() {
   const [events, setEvents]           = useState<CalendarEntry[]>([]);
   const [loading, setLoading]         = useState(true);
   const [rangeMode, setRangeMode]     = useState<RangeMode>("all");
-  const [displayMode, setDisplayMode] = useState<DisplayMode>("timeline");
+  const [displayMode, setDisplayMode] = useState<DisplayMode>(
+    () => (sessionStorage.getItem("calendarDisplayMode") as DisplayMode | null) ?? "timeline"
+  );
+
+  const setDisplayModeAndPersist = (mode: DisplayMode) => {
+    sessionStorage.setItem("calendarDisplayMode", mode);
+    setDisplayMode(mode);
+  };
   const [activeCategoryIds, setActiveCategoryIds] = useState<Set<number> | null>(null);
   const todayRef = useRef<HTMLDivElement>(null);
 
@@ -346,8 +353,12 @@ export function CalendarPage() {
     return true;
   });
 
+  const timelineEvents = displayMode === "timeline"
+    ? filtered.filter((e) => (e.endDate ?? e.date) >= todayStr)
+    : filtered;
+
   const groupedByMonth = new Map<string, CalendarEntry[]>();
-  for (const ev of filtered) {
+  for (const ev of timelineEvents) {
     const key = ev.date.slice(0, 7);
     if (!groupedByMonth.has(key)) groupedByMonth.set(key, []);
     groupedByMonth.get(key)!.push(ev);
@@ -387,13 +398,13 @@ export function CalendarPage() {
         <div className="flex items-center gap-3 flex-wrap mb-5">
           <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
             <button
-              onClick={() => setDisplayMode("timeline")}
+              onClick={() => setDisplayModeAndPersist("timeline")}
               className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", displayMode === "timeline" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
             >
               <AlignLeft className="w-3.5 h-3.5" /> Timeline
             </button>
             <button
-              onClick={() => setDisplayMode("grid")}
+              onClick={() => setDisplayModeAndPersist("grid")}
               className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors", displayMode === "grid" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
             >
               <LayoutGrid className="w-3.5 h-3.5" /> Calendar
