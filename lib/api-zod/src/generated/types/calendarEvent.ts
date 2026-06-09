@@ -13,6 +13,8 @@ export interface CalendarEvent {
   date: Date;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  sortOrder?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }

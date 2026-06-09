@@ -529,6 +529,21 @@ paths:
         "204":
           description: Deleted
 
+  /calendar-events/reorder:
+    put:
+      operationId: reorderCalendarEvents
+      tags: [calendar-events]
+      summary: Reorder calendar events by setting their sort order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CalendarEventReorderBody"
+      responses:
+        "200":
+          description: Reorder applied
+
   # ─── Photos ───────────────────────────────────────────────────────────────
   /blocks/{blockId}/photos:
     parameters:
@@ -914,6 +929,8 @@ components:
           format: date
         description:
           type: ["string", "null"]
+        sortOrder:
+          type: ["integer", "null"]
         createdAt:
           type: string
           format: date-time
@@ -921,6 +938,24 @@ components:
           type: string
           format: date-time
       required: [id, blockId, title, date, createdAt, updatedAt]
+
+    CalendarEventReorderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        sortOrder:
+          type: integer
+      required: [id, sortOrder]
+
+    CalendarEventReorderBody:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CalendarEventReorderItem"
+      required: [items]
 
     CalendarEventInput:
       type: object

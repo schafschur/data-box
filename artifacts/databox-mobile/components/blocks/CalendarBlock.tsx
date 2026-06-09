@@ -8,11 +8,12 @@ import {
 import type { Block, CalendarEvent } from "@workspace/api-client-react";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   ActivityIndicator,
   Alert,
   Animated,
+  PanResponder,
   Platform,
   Pressable,
   StyleSheet,
@@ -23,6 +24,8 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useColors } from "@/hooks/useColors";
+
+const ITEM_HEIGHT = 68;
 
 function formatDate(dateStr: string): string {
   try {
@@ -44,12 +47,14 @@ function EventRow({
   onEdit,
   onDelete,
   isDeletingId,
+  dragHandleProps,
 }: {
   event: CalendarEvent;
   highlighted: boolean;
   onEdit: (event: CalendarEvent) => void;
   onDelete: (id: number) => void;
   isDeletingId: number | null;
+  dragHandleProps?: Record<string, unknown>;
 }) {
   const colors = useColors();
   const pulse = useRef(new Animated.Value(0)).current;
@@ -87,9 +92,19 @@ function EventRow({
         },
       ]}
     >
+      {dragHandleProps && (
+        <View
+          {...dragHandleProps}
+          hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+          style={styles.dragHandle}
+        >
+          <Feather name="menu" size={14} color={colors.mutedForeground} />
+        </View>
+      )}
+
       <View style={styles.eventContent}>
         <Text style={[styles.eventDate, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-          {formatDate(event.date)}
+          {formatDate(event.date as unknown as string)}
         </Text>
         <Text
           style={[
@@ -134,6 +149,81 @@ function EventRow({
   );
 }
 
+interface DragCallbacks {
+  onDragStart: (id: number) => void;
+  onDragMove: (dy: number) => void;
+  onDragRelease: (id: number, dy: number) => void;
+  onDragCancel: () => void;
+}
+
+function DraggableEventRow({
+  event,
+  isDragging,
+  dragAnimY,
+  isHoverTarget,
+  callbacks,
+  ...eventRowProps
+}: {
+  event: CalendarEvent;
+  isDragging: boolean;
+  dragAnimY: Animated.Value;
+  isHoverTarget: boolean;
+  callbacks: DragCallbacks;
+  highlighted: boolean;
+  onEdit: (event: CalendarEvent) => void;
+  onDelete: (id: number) => void;
+  isDeletingId: number | null;
+}) {
+  const colors = useColors();
+
+  const callbacksRef = useRef<DragCallbacks>(callbacks);
+  useEffect(() => {
+    callbacksRef.current = callbacks;
+  });
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        callbacksRef.current.onDragStart(event.id);
+      },
+      onPanResponderMove: (_, gs) => {
+        callbacksRef.current.onDragMove(gs.dy);
+      },
+      onPanResponderRelease: (_, gs) => {
+        callbacksRef.current.onDragRelease(event.id, gs.dy);
+      },
+      onPanResponderTerminate: () => {
+        callbacksRef.current.onDragCancel();
+      },
+    }),
+  ).current;
+
+  return (
+    <Animated.View
+      style={[
+        isDragging && {
+          transform: [{ translateY: dragAnimY }],
+          zIndex: 100,
+          elevation: 10,
+          opacity: 0.85,
+        },
+        isHoverTarget && {
+          borderTopWidth: 2,
+          borderTopColor: colors.primary,
+          marginTop: -2,
+        },
+      ]}
+    >
+      <EventRow
+        event={event}
+        dragHandleProps={panResponder.panHandlers as unknown as Record<string, unknown>}
+        {...eventRowProps}
+      />
+    </Animated.View>
+  );
+}
+
 function EditForm({
   event,
   onSave,
@@ -147,7 +237,7 @@ function EditForm({
 }) {
   const colors = useColors();
   const [title, setTitle] = useState(event.title);
-  const [date, setDate] = useState(event.date);
+  const [date, setDate] = useState(event.date as unknown as string);
   const [description, setDescription] = useState(event.description ?? "");
 
   const canSave = title.trim().length > 0 && date.trim().length > 0;
@@ -158,15 +248,7 @@ function EditForm({
         Edit event
       </Text>
       <TextInput
-        style={[
-          styles.input,
-          {
-            color: colors.foreground,
-            borderColor: colors.border,
-            borderRadius: colors.radius,
-            fontFamily: "Inter_400Regular",
-          },
-        ]}
+        style={[styles.input, { color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius, fontFamily: "Inter_400Regular" }]}
         placeholder="Event title"
         placeholderTextColor={colors.mutedForeground}
         value={title}
@@ -175,15 +257,7 @@ function EditForm({
         autoFocus
       />
       <TextInput
-        style={[
-          styles.input,
-          {
-            color: colors.foreground,
-            borderColor: colors.border,
-            borderRadius: colors.radius,
-            fontFamily: "Inter_400Regular",
-          },
-        ]}
+        style={[styles.input, { color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius, fontFamily: "Inter_400Regular" }]}
         placeholder="Date (YYYY-MM-DD)"
         placeholderTextColor={colors.mutedForeground}
         value={date}
@@ -192,16 +266,7 @@ function EditForm({
         returnKeyType="next"
       />
       <TextInput
-        style={[
-          styles.input,
-          styles.inputMulti,
-          {
-            color: colors.foreground,
-            borderColor: colors.border,
-            borderRadius: colors.radius,
-            fontFamily: "Inter_400Regular",
-          },
-        ]}
+        style={[styles.input, styles.inputMulti, { color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius, fontFamily: "Inter_400Regular" }]}
         placeholder="Description (optional)"
         placeholderTextColor={colors.mutedForeground}
         value={description}
@@ -214,28 +279,17 @@ function EditForm({
           onPress={onCancel}
           style={[styles.btnSecondary, { borderColor: colors.border, borderRadius: colors.radius }]}
         >
-          <Text style={[styles.btnText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-            Cancel
-          </Text>
+          <Text style={[styles.btnText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Cancel</Text>
         </Pressable>
         <Pressable
           onPress={() => onSave(title.trim(), date.trim(), description.trim())}
           disabled={!canSave || isSaving}
-          style={[
-            styles.btnPrimary,
-            {
-              backgroundColor: colors.primary,
-              borderRadius: colors.radius,
-              opacity: !canSave || isSaving ? 0.5 : 1,
-            },
-          ]}
+          style={[styles.btnPrimary, { backgroundColor: colors.primary, borderRadius: colors.radius, opacity: !canSave || isSaving ? 0.5 : 1 }]}
         >
           {isSaving ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={[styles.btnText, { color: "#fff", fontFamily: "Inter_600SemiBold" }]}>
-              Save
-            </Text>
+            <Text style={[styles.btnText, { color: "#fff", fontFamily: "Inter_600SemiBold" }]}>Save</Text>
           )}
         </Pressable>
       </View>
@@ -263,15 +317,120 @@ export function CalendarBlock({
   const [adding, setAdding] = useState(false);
   const [addTitle, setAddTitle] = useState("");
   const [addDate, setAddDate] = useState(new Date().toISOString().split("T")[0]);
-
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: getListCalendarEventsQueryKey(block.id) });
+  const [localOrder, setLocalOrder] = useState<number[]>([]);
+  const localOrderRef = useRef<number[]>([]);
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const draggingRef = useRef<{ id: number; startIndex: number } | null>(null);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const hoverIndexRef = useRef<number | null>(null);
+  const dragAnimY = useRef(new Animated.Value(0)).current;
 
-  const sorted = [...(events ?? [])].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: getListCalendarEventsQueryKey(block.id) }),
+    [queryClient, block.id],
+  );
+
+  const sorted = useMemo(() => {
+    return [...(events ?? [])].sort((a, b) => {
+      const aO = a.sortOrder ?? null;
+      const bO = b.sortOrder ?? null;
+      if (aO != null && bO != null) return aO - bO;
+      if (aO != null) return -1;
+      if (bO != null) return 1;
+      return new Date(a.date as unknown as string).getTime() - new Date(b.date as unknown as string).getTime();
+    });
+  }, [events]);
+
+  useEffect(() => {
+    if (!events || events.length === 0) return;
+    if (draggingRef.current) return;
+    const ids = sorted.map((e) => e.id);
+    setLocalOrder(ids);
+    localOrderRef.current = ids;
+  }, [sorted]);
+
+  const orderedEvents = useMemo(() => {
+    if (localOrder.length === 0) return sorted;
+    return localOrder
+      .map((id) => (events ?? []).find((e) => e.id === id))
+      .filter((e): e is CalendarEvent => e !== undefined);
+  }, [localOrder, events, sorted]);
+
+  const reorderEvents = useCallback(
+    (items: { id: number; sortOrder: number }[]) => {
+      const domain = process.env.EXPO_PUBLIC_DOMAIN;
+      const base = domain ? `https://${domain}` : "";
+      fetch(`${base}/api/calendar-events/reorder`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      })
+        .then(() => invalidate())
+        .catch(() => invalidate());
+    },
+    [invalidate],
+  );
+
+  const handleDragStart = useCallback((id: number) => {
+    const index = localOrderRef.current.indexOf(id);
+    draggingRef.current = { id, startIndex: index };
+    setDraggingId(id);
+    dragAnimY.setValue(0);
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  }, [dragAnimY]);
+
+  const handleDragMove = useCallback((dy: number) => {
+    dragAnimY.setValue(dy);
+    if (!draggingRef.current) return;
+    const steps = Math.round(dy / ITEM_HEIGHT);
+    const newHover = Math.max(
+      0,
+      Math.min(localOrderRef.current.length - 1, draggingRef.current.startIndex + steps),
+    );
+    if (newHover !== hoverIndexRef.current) {
+      hoverIndexRef.current = newHover;
+      setHoverIndex(newHover);
+    }
+  }, [dragAnimY]);
+
+  const handleDragRelease = useCallback((id: number, dy: number) => {
+    const dragging = draggingRef.current;
+    if (dragging) {
+      const steps = Math.round(dy / ITEM_HEIGHT);
+      const finalIndex = Math.max(
+        0,
+        Math.min(localOrderRef.current.length - 1, dragging.startIndex + steps),
+      );
+      if (finalIndex !== dragging.startIndex) {
+        const newOrder = [...localOrderRef.current];
+        const [removed] = newOrder.splice(dragging.startIndex, 1);
+        newOrder.splice(finalIndex, 0, removed);
+        localOrderRef.current = newOrder;
+        setLocalOrder([...newOrder]);
+        reorderEvents(newOrder.map((itemId, i) => ({ id: itemId, sortOrder: i })));
+      }
+    }
+    draggingRef.current = null;
+    hoverIndexRef.current = null;
+    setDraggingId(null);
+    setHoverIndex(null);
+    dragAnimY.setValue(0);
+  }, [dragAnimY, reorderEvents]);
+
+  const handleDragCancel = useCallback(() => {
+    draggingRef.current = null;
+    hoverIndexRef.current = null;
+    setDraggingId(null);
+    setHoverIndex(null);
+    dragAnimY.setValue(0);
+  }, [dragAnimY]);
+
+  const dragCallbacks: DragCallbacks = useMemo(
+    () => ({ onDragStart: handleDragStart, onDragMove: handleDragMove, onDragRelease: handleDragRelease, onDragCancel: handleDragCancel }),
+    [handleDragStart, handleDragMove, handleDragRelease, handleDragCancel],
   );
 
   const handleAdd = () => {
@@ -297,10 +456,7 @@ export function CalendarBlock({
     if (!editingEvent) return;
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     updateEvent.mutate(
-      {
-        id: editingEvent.id,
-        data: { title, date, description: description || null },
-      },
+      { id: editingEvent.id, data: { title, date, description: description || null } },
       {
         onSuccess: () => {
           invalidate();
@@ -349,13 +505,13 @@ export function CalendarBlock({
 
   return (
     <View style={styles.container}>
-      {sorted.length === 0 && !adding ? (
+      {orderedEvents.length === 0 && !adding ? (
         <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
           No events
         </Text>
       ) : (
         <View style={styles.list}>
-          {sorted.map((event) =>
+          {orderedEvents.map((event, index) =>
             editingEvent?.id === event.id ? (
               <EditForm
                 key={event.id}
@@ -365,9 +521,13 @@ export function CalendarBlock({
                 isSaving={updateEvent.isPending}
               />
             ) : (
-              <EventRow
+              <DraggableEventRow
                 key={event.id}
                 event={event}
+                isDragging={draggingId === event.id}
+                dragAnimY={dragAnimY}
+                isHoverTarget={hoverIndex === index && draggingId !== event.id}
+                callbacks={dragCallbacks}
                 highlighted={highlightEventId === event.id}
                 onEdit={setEditingEvent}
                 onDelete={handleDelete}
@@ -381,15 +541,7 @@ export function CalendarBlock({
       {adding ? (
         <View style={[styles.addForm, { borderColor: colors.border, borderRadius: colors.radius }]}>
           <TextInput
-            style={[
-              styles.input,
-              {
-                color: colors.foreground,
-                borderColor: colors.border,
-                borderRadius: colors.radius,
-                fontFamily: "Inter_400Regular",
-              },
-            ]}
+            style={[styles.input, { color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius, fontFamily: "Inter_400Regular" }]}
             placeholder="Event title"
             placeholderTextColor={colors.mutedForeground}
             value={addTitle}
@@ -398,15 +550,7 @@ export function CalendarBlock({
             autoFocus
           />
           <TextInput
-            style={[
-              styles.input,
-              {
-                color: colors.foreground,
-                borderColor: colors.border,
-                borderRadius: colors.radius,
-                fontFamily: "Inter_400Regular",
-              },
-            ]}
+            style={[styles.input, { color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius, fontFamily: "Inter_400Regular" }]}
             placeholder="Date (YYYY-MM-DD)"
             placeholderTextColor={colors.mutedForeground}
             value={addDate}
@@ -420,9 +564,7 @@ export function CalendarBlock({
               onPress={() => { setAdding(false); setAddTitle(""); }}
               style={[styles.btnSecondary, { borderColor: colors.border, borderRadius: colors.radius }]}
             >
-              <Text style={[styles.btnText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                Cancel
-              </Text>
+              <Text style={[styles.btnText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Cancel</Text>
             </Pressable>
             <Pressable
               onPress={handleAdd}
@@ -432,9 +574,7 @@ export function CalendarBlock({
               {createEvent.isPending ? (
                 <ActivityIndicator size="small" color={colors.primaryForeground} />
               ) : (
-                <Text style={[styles.btnText, { color: colors.primaryForeground, fontFamily: "Inter_600SemiBold" }]}>
-                  Add
-                </Text>
+                <Text style={[styles.btnText, { color: colors.primaryForeground, fontFamily: "Inter_600SemiBold" }]}>Add</Text>
               )}
             </Pressable>
           </View>
@@ -469,6 +609,11 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 8,
     paddingVertical: 4,
+  },
+  dragHandle: {
+    paddingTop: 2,
+    paddingRight: 2,
+    opacity: 0.5,
   },
   eventContent: { flex: 1, gap: 2 },
   eventActions: { flexDirection: "row", alignItems: "center", gap: 4, paddingTop: 2 },

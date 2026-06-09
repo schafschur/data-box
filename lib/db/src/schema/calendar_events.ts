@@ -13,6 +13,7 @@ export const calendarEventsTable = pgTable("calendar_events", {
   endTime: text("end_time"),
   description: text("description"),
   highPriority: boolean("high_priority").default(false).notNull(),
+  sortOrder: integer("sort_order"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

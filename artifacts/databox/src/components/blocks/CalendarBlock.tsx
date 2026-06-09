@@ -12,9 +12,26 @@ import { format, isToday, isPast, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Plus, Pencil, Check, X, Flame, Clock, CalendarRange } from "lucide-react";
+import {
+  Trash2, Plus, Pencil, Check, X, Flame, Clock, CalendarRange, GripVertical,
+} from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 function formatTime(time: string): string {
   const [h, m] = time.split(":").map(Number);
@@ -65,23 +82,23 @@ function EventRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle]           = useState(event.title);
-  const [editDate, setEditDate]             = useState(event.date);
-  const [editEndDate, setEditEndDate]       = useState(event.endDate ?? "");
+  const [editDate, setEditDate]             = useState(event.date as unknown as string);
+  const [editEndDate, setEditEndDate]       = useState((event.endDate as unknown as string) ?? "");
   const [editStartTime, setEditStartTime]   = useState(event.startTime ?? "");
   const [editEndTime, setEditEndTime]       = useState(event.endTime ?? "");
   const [editDescription, setEditDescription] = useState(event.description ?? "");
 
-  const eventDate     = parseISO(event.date);
-  const isEventToday  = isToday(eventDate);
-  const isEventPast   = isPast(event.endDate ? parseISO(event.endDate) : eventDate) && !isEventToday;
-  const isPriority    = !!event.highPriority;
-  const isMultiDay    = !!event.endDate && event.endDate !== event.date;
-  const timeRange     = formatTimeRange(event.startTime, event.endTime);
+  const eventDate    = parseISO(event.date as unknown as string);
+  const isEventToday = isToday(eventDate);
+  const isEventPast  = isPast(event.endDate ? parseISO(event.endDate as unknown as string) : eventDate) && !isEventToday;
+  const isPriority   = !!event.highPriority;
+  const isMultiDay   = !!event.endDate && event.endDate !== event.date;
+  const timeRange    = formatTimeRange(event.startTime, event.endTime);
 
   const startEdit = () => {
     setEditTitle(event.title);
-    setEditDate(event.date);
-    setEditEndDate(event.endDate ?? "");
+    setEditDate(event.date as unknown as string);
+    setEditEndDate((event.endDate as unknown as string) ?? "");
     setEditStartTime(event.startTime ?? "");
     setEditEndTime(event.endTime ?? "");
     setEditDescription(event.description ?? "");
@@ -114,7 +131,6 @@ function EventRow({
             : "bg-muted/30 border-border",
         )}
       >
-        {/* Row 1: title only */}
         <Input
           value={editTitle}
           onChange={(e) => setEditTitle(e.target.value)}
@@ -122,50 +138,25 @@ function EventRow({
           className="w-full h-8 text-sm"
           autoFocus
         />
-
-        {/* Row 2: start date + end date + time range */}
         <div className="flex items-end gap-2 flex-wrap">
           <div className="flex flex-col gap-0.5">
             <label className="text-[10px] text-muted-foreground uppercase tracking-wider pl-0.5">Start date</label>
-            <Input
-              type="date"
-              value={editDate}
-              onChange={(e) => setEditDate(e.target.value)}
-              className="w-[148px] h-8 text-sm"
-            />
+            <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="w-[148px] h-8 text-sm" />
           </div>
           <div className="flex flex-col gap-0.5">
             <label className="text-[10px] text-muted-foreground uppercase tracking-wider pl-0.5">End date <span className="normal-case">(optional)</span></label>
-            <Input
-              type="date"
-              value={editEndDate}
-              min={editDate}
-              onChange={(e) => setEditEndDate(e.target.value)}
-              className="w-[148px] h-8 text-sm"
-            />
+            <Input type="date" value={editEndDate} min={editDate} onChange={(e) => setEditEndDate(e.target.value)} className="w-[148px] h-8 text-sm" />
           </div>
           <div className="flex flex-col gap-0.5">
             <label className="text-[10px] text-muted-foreground uppercase tracking-wider pl-0.5">From <span className="normal-case">(optional)</span></label>
-            <Input
-              type="time"
-              value={editStartTime}
-              onChange={(e) => setEditStartTime(e.target.value)}
-              className="w-[120px] h-8 text-sm"
-            />
+            <Input type="time" value={editStartTime} onChange={(e) => setEditStartTime(e.target.value)} className="w-[120px] h-8 text-sm" />
           </div>
           <span className="text-muted-foreground text-sm pb-1">–</span>
           <div className="flex flex-col gap-0.5">
             <label className="text-[10px] text-muted-foreground uppercase tracking-wider pl-0.5">To <span className="normal-case">(optional)</span></label>
-            <Input
-              type="time"
-              value={editEndTime}
-              onChange={(e) => setEditEndTime(e.target.value)}
-              className="w-[120px] h-8 text-sm"
-            />
+            <Input type="time" value={editEndTime} onChange={(e) => setEditEndTime(e.target.value)} className="w-[120px] h-8 text-sm" />
           </div>
         </div>
-
-        {/* Description */}
         <Textarea
           value={editDescription}
           onChange={(e) => setEditDescription(e.target.value)}
@@ -212,9 +203,7 @@ function EventRow({
       >
         <span className="text-xs uppercase font-medium">{format(eventDate, "MMM")}</span>
         <span className="text-lg font-serif">{format(eventDate, "d")}</span>
-        {isMultiDay && (
-          <CalendarRange className="w-2.5 h-2.5 mt-0.5 opacity-70" />
-        )}
+        {isMultiDay && <CalendarRange className="w-2.5 h-2.5 mt-0.5 opacity-70" />}
       </div>
 
       {/* Content */}
@@ -241,21 +230,16 @@ function EventRow({
             </span>
           )}
         </div>
-
-        {/* Date display */}
         <div className={cn("text-sm mt-0.5 flex items-center gap-1.5", isPriority ? "text-orange-700/70" : "text-muted-foreground")}>
           {isMultiDay && <CalendarRange className="w-3 h-3 shrink-0 opacity-60" />}
-          <span>{formatDateRange(event.date, event.endDate)}</span>
+          <span>{formatDateRange(event.date as unknown as string, event.endDate as unknown as string)}</span>
         </div>
-
-        {/* Time range */}
         {timeRange && (
           <div className={cn("text-sm flex items-center gap-1.5 mt-0.5", isPriority ? "text-orange-700/60" : "text-muted-foreground")}>
             <Clock className="w-3 h-3 shrink-0 opacity-60" />
             <span>{timeRange}</span>
           </div>
         )}
-
         {event.description && (
           <div className={cn("text-sm mt-1 line-clamp-2", isPriority ? "text-orange-800/60" : "text-muted-foreground")}>
             {event.description}
@@ -296,6 +280,48 @@ function EventRow({
   );
 }
 
+function SortableEventRow(props: {
+  event: CalendarEvent;
+  onDelete: () => void;
+  onSave: (data: EditState) => void;
+  onTogglePriority: () => void;
+  isDeleting: boolean;
+  isSaving: boolean;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: props.event.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+    position: "relative",
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="group/drag flex items-stretch gap-1">
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex items-center justify-center w-5 shrink-0 cursor-grab active:cursor-grabbing opacity-0 group-hover/drag:opacity-30 hover:!opacity-70 touch-none text-muted-foreground transition-opacity"
+        title="Drag to reorder"
+      >
+        <GripVertical className="h-4 w-4" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <EventRow {...props} />
+      </div>
+    </div>
+  );
+}
+
 export function CalendarBlock({ block }: { block: Block }) {
   const [newTitle, setNewTitle]         = useState("");
   const [newDate, setNewDate]           = useState("");
@@ -311,6 +337,10 @@ export function CalendarBlock({ block }: { block: Block }) {
   const createEvent = useCreateCalendarEvent();
   const updateEvent = useUpdateCalendarEvent();
   const deleteEvent = useDeleteCalendarEvent();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: getListCalendarEventsQueryKey(block.id) });
@@ -364,12 +394,12 @@ export function CalendarBlock({ block }: { block: Block }) {
       {
         id: event.id,
         data: {
-          title:       event.title,
-          date:        event.date,
-          endDate:     event.endDate     ?? null,
-          startTime:   event.startTime   ?? null,
-          endTime:     event.endTime     ?? null,
-          description: event.description ?? null,
+          title:        event.title,
+          date:         event.date as unknown as string,
+          endDate:      event.endDate as unknown as string ?? null,
+          startTime:    event.startTime   ?? null,
+          endTime:      event.endTime     ?? null,
+          description:  event.description ?? null,
           highPriority: !event.highPriority,
         },
       },
@@ -381,83 +411,95 @@ export function CalendarBlock({ block }: { block: Block }) {
     deleteEvent.mutate({ id }, { onSuccess: invalidate });
   };
 
-  const sortedEvents = [...events].sort((a, b) => {
+  const displayEvents = [...events].sort((a, b) => {
+    const aOrder = a.sortOrder ?? null;
+    const bOrder = b.sortOrder ?? null;
+    if (aOrder != null && bOrder != null) return aOrder - bOrder;
+    if (aOrder != null) return -1;
+    if (bOrder != null) return 1;
     if (a.highPriority && !b.highPriority) return -1;
     if (!a.highPriority && b.highPriority) return 1;
-    return new Date(a.date).getTime() - new Date(b.date).getTime();
+    return new Date(a.date as unknown as string).getTime() - new Date(b.date as unknown as string).getTime();
   });
+
+  const handleDragEnd = async (dragEvent: DragEndEvent) => {
+    const { active, over } = dragEvent;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = displayEvents.findIndex((e) => e.id === active.id);
+    const newIndex = displayEvents.findIndex((e) => e.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(displayEvents, oldIndex, newIndex);
+
+    queryClient.setQueryData(
+      getListCalendarEventsQueryKey(block.id),
+      reordered.map((e, i) => ({ ...e, sortOrder: i })),
+    );
+
+    try {
+      await fetch("/api/calendar-events/reorder", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: reordered.map((e, i) => ({ id: e.id, sortOrder: i })),
+        }),
+      });
+    } catch {
+      invalidate();
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="space-y-3">
-        {sortedEvents.length === 0 ? (
-          <div className="text-center py-6 text-muted-foreground text-sm">
-            No events scheduled
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={displayEvents.map((e) => e.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-3">
+            {displayEvents.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground text-sm">
+                No events scheduled
+              </div>
+            ) : (
+              displayEvents.map((event) => (
+                <SortableEventRow
+                  key={event.id}
+                  event={event}
+                  onDelete={() => handleDelete(event.id)}
+                  onSave={(data) => handleSave(event.id, data)}
+                  onTogglePriority={() => handleTogglePriority(event)}
+                  isDeleting={deleteEvent.isPending}
+                  isSaving={updateEvent.isPending}
+                />
+              ))
+            )}
           </div>
-        ) : (
-          sortedEvents.map((event) => (
-            <EventRow
-              key={event.id}
-              event={event}
-              onDelete={() => handleDelete(event.id)}
-              onSave={(data) => handleSave(event.id, data)}
-              onTogglePriority={() => handleTogglePriority(event)}
-              isDeleting={deleteEvent.isPending}
-              isSaving={updateEvent.isPending}
-            />
-          ))
-        )}
-      </div>
+        </SortableContext>
+      </DndContext>
 
-      {/* Add form */}
       <form onSubmit={handleAdd} className="space-y-2 pt-4 border-t border-border/50">
-        {/* Row 1: title only */}
         <Input
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           placeholder="Event title"
           className="w-full"
         />
-
-        {/* Row 2: start date + end date + time range + add button */}
         <div className="flex items-end gap-2 flex-wrap">
           <div className="flex flex-col gap-0.5">
             <label className="text-[10px] text-muted-foreground uppercase tracking-wider pl-0.5">Start</label>
-            <Input
-              type="date"
-              value={newDate}
-              onChange={(e) => setNewDate(e.target.value)}
-              className="w-[148px] h-9 text-sm"
-            />
+            <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="w-[148px] h-9 text-sm" />
           </div>
           <div className="flex flex-col gap-0.5">
             <label className="text-[10px] text-muted-foreground uppercase tracking-wider pl-0.5">End date <span className="normal-case opacity-70">(opt)</span></label>
-            <Input
-              type="date"
-              value={newEndDate}
-              min={newDate}
-              onChange={(e) => setNewEndDate(e.target.value)}
-              className="w-[148px] h-9 text-sm"
-            />
+            <Input type="date" value={newEndDate} min={newDate} onChange={(e) => setNewEndDate(e.target.value)} className="w-[148px] h-9 text-sm" />
           </div>
           <div className="flex flex-col gap-0.5">
             <label className="text-[10px] text-muted-foreground uppercase tracking-wider pl-0.5">From <span className="normal-case opacity-70">(opt)</span></label>
-            <Input
-              type="time"
-              value={newStartTime}
-              onChange={(e) => setNewStartTime(e.target.value)}
-              className="w-[120px] h-9 text-sm"
-            />
+            <Input type="time" value={newStartTime} onChange={(e) => setNewStartTime(e.target.value)} className="w-[120px] h-9 text-sm" />
           </div>
           <span className="text-muted-foreground text-sm pb-2">–</span>
           <div className="flex flex-col gap-0.5">
             <label className="text-[10px] text-muted-foreground uppercase tracking-wider pl-0.5">To <span className="normal-case opacity-70">(opt)</span></label>
-            <Input
-              type="time"
-              value={newEndTime}
-              onChange={(e) => setNewEndTime(e.target.value)}
-              className="w-[120px] h-9 text-sm"
-            />
+            <Input type="time" value={newEndTime} onChange={(e) => setNewEndTime(e.target.value)} className="w-[120px] h-9 text-sm" />
           </div>
           <Button
             type="submit"

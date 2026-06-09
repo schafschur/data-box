@@ -395,6 +395,7 @@ export const ListCalendarEventsResponseItem = zod.object({
   "endTime": zod.string().nullish(),
   "description": zod.string().nullish(),
   "highPriority": zod.boolean().optional(),
+  "sortOrder": zod.number().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })

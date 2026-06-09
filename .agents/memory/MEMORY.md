@@ -7,3 +7,5 @@
 - [API server schema changes require restart](api-server-schema-changes.md) — esbuild bundles schema at startup; push-force alone isn't enough, must restart API server too.
 - [PDF block storage pattern](pdf-block-pattern.md) — PDF blocks store metadata in block content jsonb (no new table); upload/delete via dedicated /api/blocks/:blockId/pdfs routes.
 - [Adding new block types](adding-block-types.md) — six files must be updated; CreateBlockBody Zod enum is the hidden sixth that breaks block creation if missed.
+- [API server cannot import zod directly](api-server-zod-import.md) — esbuild can't resolve bare "zod" in api-server routes; use inline manual validation or import Zod schemas only from @workspace/api-zod.
+- [Mobile PanResponder in ScrollView](mobile-panresponder-scrollview.md) — use onStartShouldSetPanResponder: () => true on the drag handle View to claim gesture before parent ScrollView; use callbacksRef pattern for stale-closure safety.

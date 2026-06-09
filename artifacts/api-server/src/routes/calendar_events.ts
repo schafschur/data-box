@@ -47,6 +47,23 @@ router.post("/blocks/:blockId/calendar-events", async (req: Request, res: Respon
   res.status(201).json(row);
 });
 
+router.put("/calendar-events/reorder", async (req: Request, res: Response) => {
+  const body = req.body as { items?: { id: number; sortOrder: number }[] };
+  if (!Array.isArray(body?.items) || body.items.some((x) => typeof x.id !== "number" || typeof x.sortOrder !== "number")) {
+    res.status(400).json({ error: "Invalid request body" });
+    return;
+  }
+  await Promise.all(
+    body.items.map(({ id, sortOrder }) =>
+      db
+        .update(calendarEventsTable)
+        .set({ sortOrder, updatedAt: new Date() })
+        .where(eq(calendarEventsTable.id, id)),
+    ),
+  );
+  res.json({ ok: true });
+});
+
 router.put("/calendar-events/:id", async (req: Request, res: Response) => {
   const { id } = UpdateCalendarEventParams.parse(req.params);
   const parsed = UpdateCalendarEventBody.safeParse(req.body);
