@@ -41,47 +41,52 @@ function UpcomingEventCard({ event }: { event: UpcomingEvent }) {
     <Link href={`/instances/${event.instanceId}#event-${event.id}`}>
       <div
         className={cn(
-          "flex items-center gap-4 p-3 rounded-lg border cursor-pointer transition-all hover:shadow-sm hover:border-primary/40 group",
+          "rounded-lg border cursor-pointer transition-all hover:shadow-sm hover:border-primary/40 group overflow-hidden",
           isEventToday ? "bg-primary/5 border-primary/20" : "bg-card border-border hover:bg-muted/20",
         )}
       >
-        <div
-          className={cn(
-            "w-12 h-12 flex flex-col items-center justify-center rounded-lg shrink-0",
-            isEventToday ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-          )}
-        >
-          <span className="text-[10px] uppercase font-semibold tracking-wide leading-none mb-0.5">
-            {format(eventDate, "EEE")}
-          </span>
-          <span className="text-xl font-serif leading-none">{format(eventDate, "d")}</span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className={cn("font-medium text-sm truncate transition-colors group-hover:text-primary", isEventToday && "text-primary")}>
-            {event.title}
-          </p>
-          <p className="text-xs text-muted-foreground mt-0.5 truncate">
-            {event.instanceName}
-            {event.blockTitle && <span className="opacity-60"> · {event.blockTitle}</span>}
-          </p>
-          {event.locationName && (
-            <div className="flex items-center gap-1 mt-0.5">
-              <MapPin className="w-3 h-3 shrink-0" style={{ color: event.locationColor || "#6b7280" }} />
-              <span className="text-xs font-medium truncate" style={{ color: event.locationColor || "#6b7280" }}>
-                {event.locationName}
-              </span>
-            </div>
-          )}
-        </div>
-        {isEventToday && (
-          <span className="text-[10px] uppercase tracking-wider bg-primary/20 text-primary px-1.5 py-0.5 rounded font-bold shrink-0">
-            Today
-          </span>
+        {event.locationName && event.locationColor && (
+          <div style={{ height: 10, backgroundColor: event.locationColor }} />
         )}
-        <div
-          className="w-2 h-2 rounded-full shrink-0 opacity-40 group-hover:opacity-70 transition-opacity"
-          style={{ backgroundColor: event.categoryColor || "var(--primary)" }}
-        />
+        <div className="flex items-center gap-4 p-3">
+          <div
+            className={cn(
+              "w-12 h-12 flex flex-col items-center justify-center rounded-lg shrink-0",
+              isEventToday ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+            )}
+          >
+            <span className="text-[10px] uppercase font-semibold tracking-wide leading-none mb-0.5">
+              {format(eventDate, "EEE")}
+            </span>
+            <span className="text-xl font-serif leading-none">{format(eventDate, "d")}</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={cn("font-medium text-sm truncate transition-colors group-hover:text-primary", isEventToday && "text-primary")}>
+              {event.title}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+              {event.instanceName}
+              {event.blockTitle && <span className="opacity-60"> · {event.blockTitle}</span>}
+            </p>
+            {event.locationName && (
+              <div className="flex items-center gap-1 mt-0.5">
+                <MapPin className="w-3 h-3 shrink-0" style={{ color: event.locationColor || "#6b7280" }} />
+                <span className="text-xs font-medium truncate" style={{ color: event.locationColor || "#6b7280" }}>
+                  {event.locationName}
+                </span>
+              </div>
+            )}
+          </div>
+          {isEventToday && (
+            <span className="text-[10px] uppercase tracking-wider bg-primary/20 text-primary px-1.5 py-0.5 rounded font-bold shrink-0">
+              Today
+            </span>
+          )}
+          <div
+            className="w-2 h-2 rounded-full shrink-0 opacity-40 group-hover:opacity-70 transition-opacity"
+            style={{ backgroundColor: event.categoryColor || "var(--primary)" }}
+          />
+        </div>
       </div>
     </Link>
   );

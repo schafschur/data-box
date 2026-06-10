@@ -117,7 +117,12 @@ function TimelineEventCard({ event }: { event: CalendarEntry }) {
       )}
       style={
         !isPriority
-          ? { borderLeftColor: color, borderLeftWidth: 3, boxShadow: isEventToday ? `0 1px 3px 0 ${hexWithOpacity(color, 0.2)}` : undefined }
+          ? {
+              borderLeftColor: color,
+              borderLeftWidth: 3,
+              boxShadow: isEventToday ? `0 1px 3px 0 ${hexWithOpacity(color, 0.2)}` : undefined,
+              ...(event.locationColor ? { background: `linear-gradient(to left, ${event.locationColor} 60%, white 100%)` } : {}),
+            }
           : { borderLeftWidth: 3, borderLeftColor: "rgb(249,115,22)" }
       }
     >
