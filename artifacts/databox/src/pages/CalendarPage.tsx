@@ -131,8 +131,8 @@ function TimelineEventCard({ event }: { event: CalendarEntry }) {
             right: 0,
             width: 0,
             height: 0,
-            borderLeft: "50px solid transparent",
-            borderBottom: `50px solid ${event.locationColor}`,
+            borderLeft: "24px solid transparent",
+            borderBottom: `24px solid ${event.locationColor}`,
           }}
         />
       )}
@@ -264,12 +264,12 @@ function GridEventItem({ event }: { event: CalendarEntry }) {
           aria-hidden
           style={{
             position: "absolute",
-            top: 0,
+            bottom: 0,
             right: 0,
             width: 0,
             height: 0,
-            borderLeft: "20px solid transparent",
-            borderTop: `20px solid ${event.locationColor}`,
+            borderLeft: "24px solid transparent",
+            borderBottom: `24px solid ${event.locationColor}`,
           }}
         />
       )}
