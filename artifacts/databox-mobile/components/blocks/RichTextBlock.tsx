@@ -76,7 +76,7 @@ export function RichTextBlock({
     updateBlock.mutate(
       {
         id: block.id,
-        data: { content: trimmed ? textToHtml(trimmed) : null },
+        data: { content: trimmed ? { html: textToHtml(trimmed) } : null },
       },
       {
         onSuccess: () => {
