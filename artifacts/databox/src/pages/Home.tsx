@@ -41,12 +41,30 @@ function UpcomingEventCard({ event }: { event: UpcomingEvent }) {
     <Link href={`/instances/${event.instanceId}#event-${event.id}`}>
       <div
         className={cn(
-          "rounded-lg border cursor-pointer transition-all hover:shadow-sm hover:border-primary/40 group overflow-hidden",
+          "relative overflow-hidden rounded-lg border cursor-pointer transition-all hover:shadow-sm hover:border-primary/40 group",
           isEventToday ? "bg-primary/5 border-primary/20" : "bg-card border-border hover:bg-muted/20",
         )}
       >
-        {event.locationName && event.locationColor && (
-          <div style={{ height: 10, backgroundColor: event.locationColor }} />
+        {/* Category dot — top-right */}
+        <span
+          aria-hidden
+          className="absolute top-2 right-2 w-2 h-2 rounded-full opacity-50 group-hover:opacity-80 transition-opacity z-10"
+          style={{ backgroundColor: event.categoryColor || "var(--primary)" }}
+        />
+        {/* Location triangle — bottom-right */}
+        {event.locationColor && (
+          <span
+            aria-hidden
+            style={{
+              position: "absolute",
+              bottom: 0,
+              right: 0,
+              width: 0,
+              height: 0,
+              borderLeft: "32px solid transparent",
+              borderBottom: `32px solid ${event.locationColor}`,
+            }}
+          />
         )}
         <div className="flex items-center gap-4 p-3">
           <div
@@ -82,10 +100,6 @@ function UpcomingEventCard({ event }: { event: UpcomingEvent }) {
               Today
             </span>
           )}
-          <div
-            className="w-2 h-2 rounded-full shrink-0 opacity-40 group-hover:opacity-70 transition-opacity"
-            style={{ backgroundColor: event.categoryColor || "var(--primary)" }}
-          />
         </div>
       </div>
     </Link>

@@ -89,6 +89,7 @@ function EventRow({
           backgroundColor: highlighted ? highlightBg : "transparent",
           borderRadius: highlighted ? 4 : 0,
           paddingRight: 4,
+          overflow: "hidden",
         },
       ]}
     >
@@ -122,15 +123,24 @@ function EventRow({
             {event.description}
           </Text>
         ) : null}
-        {(event as { locationName?: string | null }).locationName ? (
-          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2, gap: 4 }}>
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: (event as { locationColor?: string | null }).locationColor || "#6b7280" }} />
-            <Text style={{ fontSize: 11, color: (event as { locationColor?: string | null }).locationColor || "#6b7280", fontFamily: "Inter_500Medium" }}>
-              {(event as { locationName?: string | null }).locationName}
-            </Text>
-          </View>
-        ) : null}
       </View>
+
+      {(event as { locationColor?: string | null }).locationColor ? (
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            bottom: 0,
+            right: 0,
+            width: 0,
+            height: 0,
+            borderLeftWidth: 32,
+            borderLeftColor: "transparent",
+            borderBottomWidth: 32,
+            borderBottomColor: (event as { locationColor?: string | null }).locationColor!,
+          }}
+        />
+      ) : null}
 
       <View style={styles.eventActions}>
         <Pressable

@@ -218,7 +218,7 @@ function EventRow({
     <div
       id={`event-${event.id}`}
       className={cn(
-        "flex items-start gap-4 p-4 rounded-lg border group transition-all",
+        "relative overflow-hidden flex items-start gap-4 p-4 rounded-lg border group transition-all",
         isPriority && [
           "bg-gradient-to-r from-orange-50 via-amber-50/60 to-transparent",
           "border-orange-300 border-l-[3px] border-l-orange-500 shadow-sm shadow-orange-100",
@@ -230,6 +230,20 @@ function EventRow({
         isEventPast && isPriority  && "opacity-75",
       )}
     >
+      {locationColor && (
+        <span
+          aria-hidden
+          style={{
+            position: "absolute",
+            bottom: 0,
+            right: 0,
+            width: 0,
+            height: 0,
+            borderLeft: "50px solid transparent",
+            borderBottom: `50px solid ${locationColor}`,
+          }}
+        />
+      )}
       {/* Date badge */}
       <div
         className={cn(
@@ -283,9 +297,6 @@ function EventRow({
           <div className={cn("text-sm mt-1 line-clamp-2", isPriority ? "text-orange-800/60" : "text-muted-foreground")}>
             {event.description}
           </div>
-        )}
-        {locationName && (
-          <LocationBadge name={locationName} color={locationColor || "#6b7280"} />
         )}
       </div>
 

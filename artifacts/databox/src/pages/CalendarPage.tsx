@@ -248,7 +248,7 @@ function GridEventItem({ event }: { event: CalendarEntry }) {
       onClick={(e) => { e.stopPropagation(); setLocation(`/instances/${event.instanceId}`); }}
       title={`${event.title}${timeRange ? ` · ${timeRange}` : ""}${event.locationName ? ` · 📍 ${event.locationName}` : ""} · ${event.categoryName} › ${event.instanceName}`}
       className={cn(
-        "w-full text-left text-[11px] leading-tight px-1.5 py-1 rounded flex flex-col gap-0.5 transition-all",
+        "relative overflow-hidden w-full text-left text-[11px] leading-tight px-1.5 py-1 rounded flex flex-col gap-0.5 transition-all",
         isPriority
           ? "bg-orange-50 border border-orange-200 text-orange-900 hover:bg-orange-100"
           : isMultiDay
@@ -259,6 +259,20 @@ function GridEventItem({ event }: { event: CalendarEntry }) {
         isPriority ? undefined : { borderLeft: `2px solid ${color}`, paddingLeft: "5px" }
       }
     >
+      {event.locationColor && (
+        <span
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            width: 0,
+            height: 0,
+            borderLeft: "20px solid transparent",
+            borderTop: `20px solid ${event.locationColor}`,
+          }}
+        />
+      )}
       <div className="flex items-center gap-1">
         {isPriority
           ? <Flame className="w-2.5 h-2.5 text-orange-500 fill-orange-400 shrink-0" />
@@ -266,12 +280,6 @@ function GridEventItem({ event }: { event: CalendarEntry }) {
         }
         <span className="truncate font-medium">{event.title}</span>
         {isMultiDay && <CalendarRange className="w-2.5 h-2.5 shrink-0 opacity-50" />}
-        {event.locationName && (
-          <span
-            className="w-2 h-2 rounded-full shrink-0"
-            style={{ backgroundColor: event.locationColor || "#6b7280" }}
-          />
-        )}
       </div>
       {timeRange && (
         <div className={cn("flex items-center gap-0.5 pl-3", isPriority ? "text-orange-600/70" : "text-muted-foreground")}>

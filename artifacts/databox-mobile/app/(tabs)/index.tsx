@@ -228,9 +228,43 @@ function UpcomingEventRow({
           borderColor: today ? colors.primary + "40" : colors.border,
           borderRadius: colors.radius,
           opacity: pressed ? 0.8 : 1,
+          overflow: "hidden",
         },
       ]}
     >
+      {/* Category dot — top-right */}
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          top: 8,
+          right: 8,
+          width: 8,
+          height: 8,
+          borderRadius: 4,
+          backgroundColor: dotColor,
+          opacity: 0.5,
+          zIndex: 1,
+        }}
+      />
+      {/* Location triangle — bottom-right */}
+      {event.locationColor ? (
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            bottom: 0,
+            right: 0,
+            width: 0,
+            height: 0,
+            borderLeftWidth: 32,
+            borderLeftColor: "transparent",
+            borderBottomWidth: 32,
+            borderBottomColor: event.locationColor,
+          }}
+        />
+      ) : null}
+
       {/* Date chip */}
       <View
         style={[
@@ -277,30 +311,18 @@ function UpcomingEventRow({
           {event.instanceName}
           {event.blockTitle ? ` · ${event.blockTitle}` : ""}
         </Text>
-        {event.locationName ? (
-          <View style={styles.locationBadge}>
-            <View style={[styles.locationDot, { backgroundColor: event.locationColor ?? colors.primary }]} />
-            <Text
-              style={[styles.locationText, { color: event.locationColor ?? colors.primary, fontFamily: "Inter_500Medium" }]}
-              numberOfLines={1}
-            >
-              {event.locationName}
-            </Text>
-          </View>
-        ) : null}
       </View>
 
-      {/* Today badge + color dot */}
-      <View style={styles.eventRight}>
-        {today && (
+      {/* Today badge */}
+      {today ? (
+        <View style={styles.eventRight}>
           <View style={[styles.todayBadge, { backgroundColor: colors.primary + "25" }]}>
             <Text style={[styles.todayBadgeText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
               TODAY
             </Text>
           </View>
-        )}
-        <View style={[styles.colorDot, { backgroundColor: dotColor }]} />
-      </View>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
