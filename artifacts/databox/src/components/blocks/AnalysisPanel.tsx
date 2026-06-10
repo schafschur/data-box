@@ -7,9 +7,10 @@ import {
   CheckCircle2, Calendar as CalendarIcon, Hash, Image as ImageIcon,
   MessageSquare, StickyNote, CalendarDays, FileText, CheckSquare,
   Users, List, FileIcon, Clock, AlertTriangle, Grid, ArrowUp, ArrowDown,
+  ChevronDown, Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { ComponentType } from "react";
 
 function pct(num: number, total: number) {
@@ -107,6 +108,30 @@ function GridBlockAnalytics({ stat }: { stat: GridBlockStat }) {
   const [yMinRaw, setYMinRaw] = useState("");
   const [yMaxRaw, setYMaxRaw] = useState("");
   const [higherIsBetter, setHigherIsBetter] = useState(true);
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<number>>(new Set());
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    function handleOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [dropdownOpen]);
+
+  function toggleRow(rowId: number) {
+    setSelectedRowIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(rowId)) next.delete(rowId); else next.add(rowId);
+      return next;
+    });
+  }
+
+  const visibleRows = stat.rows.filter((r) => selectedRowIds.has(r.rowId));
 
   const yMin = yMinRaw.trim() !== "" && !isNaN(Number(yMinRaw)) ? Number(yMinRaw) : "auto";
   const yMax = yMaxRaw.trim() !== "" && !isNaN(Number(yMaxRaw)) ? Number(yMaxRaw) : "auto";
@@ -294,38 +319,84 @@ function GridBlockAnalytics({ stat }: { stat: GridBlockStat }) {
           {/* Line chart: per-row trends */}
           {hasMultipleRows && (
             <div>
-              <p className="text-xs text-muted-foreground mb-2">Trends per row</p>
-              <div className="h-[170px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={lineData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
-                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                      domain={yDomain}
-                      allowDataOverflow={hasCustomRange}
-                    />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: "var(--popover)", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "12px" }}
-                    />
-                    <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize: "11px", paddingTop: "4px" }} />
-                    {stat.rows.map((row, i) => (
-                      <Line
-                        key={row.rowId}
-                        type="monotone"
-                        dataKey={row.label ?? `Row ${i + 1}`}
-                        stroke={LINE_COLORS[i % LINE_COLORS.length]}
-                        strokeWidth={2}
-                        dot={{ r: 3, fill: LINE_COLORS[i % LINE_COLORS.length], strokeWidth: 0 }}
-                        activeDot={{ r: 4 }}
-                        connectNulls
-                      />
-                    ))}
-                  </LineChart>
-                </ResponsiveContainer>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-muted-foreground">Trends per row</p>
+                {/* Row multiselect dropdown */}
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setDropdownOpen((v) => !v)}
+                    className="flex items-center gap-1 text-xs border border-border rounded-md px-2 h-6 text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+                  >
+                    {selectedRowIds.size === 0
+                      ? "Select rows"
+                      : `${selectedRowIds.size} / ${stat.rows.length} shown`}
+                    <ChevronDown className={cn("w-3 h-3 transition-transform", dropdownOpen && "rotate-180")} />
+                  </button>
+                  {dropdownOpen && (
+                    <div className="absolute right-0 top-7 z-20 bg-popover border border-border rounded-lg shadow-lg p-1 min-w-[160px] space-y-0.5">
+                      {stat.rows.map((row, i) => {
+                        const label = row.label ?? `Row ${i + 1}`;
+                        const color = LINE_COLORS[i % LINE_COLORS.length];
+                        const selected = selectedRowIds.has(row.rowId);
+                        return (
+                          <button
+                            key={row.rowId}
+                            onClick={() => toggleRow(row.rowId)}
+                            className={cn(
+                              "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors text-left",
+                              selected ? "bg-accent/60" : "hover:bg-accent/40"
+                            )}
+                          >
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                            <span className="flex-1 truncate">{label}</span>
+                            {selected && <Check className="w-3 h-3 text-primary shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
+              {visibleRows.length === 0 ? (
+                <div className="h-[170px] flex items-center justify-center text-xs text-muted-foreground">
+                  Select rows from the dropdown to view trends
+                </div>
+              ) : (
+                <div className="h-[170px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={lineData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
+                      <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                        domain={yDomain}
+                        allowDataOverflow={hasCustomRange}
+                      />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: "var(--popover)", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "12px" }}
+                      />
+                      {visibleRows.map((row) => {
+                        const globalIdx = stat.rows.indexOf(row);
+                        const color = LINE_COLORS[globalIdx % LINE_COLORS.length];
+                        return (
+                          <Line
+                            key={row.rowId}
+                            type="monotone"
+                            dataKey={row.label ?? `Row ${globalIdx + 1}`}
+                            stroke={color}
+                            strokeWidth={2}
+                            dot={{ r: 3, fill: color, strokeWidth: 0 }}
+                            activeDot={{ r: 4 }}
+                            connectNulls
+                          />
+                        );
+                      })}
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
           )}
         </div>
