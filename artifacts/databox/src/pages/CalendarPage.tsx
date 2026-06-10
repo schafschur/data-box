@@ -107,7 +107,7 @@ function TimelineEventCard({ event }: { event: CalendarEntry }) {
     <button
       onClick={() => setLocation(`/instances/${event.instanceId}`)}
       className={cn(
-        "w-full text-left flex items-start gap-4 p-4 rounded-xl border transition-all group",
+        "relative overflow-hidden w-full text-left flex items-start gap-4 p-4 rounded-xl border transition-all group",
         isPriority && "bg-gradient-to-r from-orange-50 via-amber-50/50 to-transparent border-orange-300 shadow-sm shadow-orange-100",
         !isPriority && isEventToday && "bg-primary/5 border-primary/20 shadow-sm",
         !isPriority && !isEventToday && "bg-card border-border hover:border-border/80",
@@ -117,15 +117,25 @@ function TimelineEventCard({ event }: { event: CalendarEntry }) {
       )}
       style={
         !isPriority
-          ? {
-              borderLeftColor: color,
-              borderLeftWidth: 3,
-              boxShadow: isEventToday ? `0 1px 3px 0 ${hexWithOpacity(color, 0.2)}` : undefined,
-              ...(event.locationColor ? { background: `linear-gradient(to left, ${event.locationColor} 35%, white 100%)` } : {}),
-            }
+          ? { borderLeftColor: color, borderLeftWidth: 3, boxShadow: isEventToday ? `0 1px 3px 0 ${hexWithOpacity(color, 0.2)}` : undefined }
           : { borderLeftWidth: 3, borderLeftColor: "rgb(249,115,22)" }
       }
     >
+      {/* Location triangle */}
+      {event.locationColor && (
+        <span
+          aria-hidden
+          style={{
+            position: "absolute",
+            bottom: 0,
+            right: 0,
+            width: 0,
+            height: 0,
+            borderLeft: "50px solid transparent",
+            borderBottom: `50px solid ${event.locationColor}`,
+          }}
+        />
+      )}
       {/* Date badge */}
       <div
         className="w-12 flex flex-col items-center justify-center rounded-lg py-1.5 shrink-0 text-white"
