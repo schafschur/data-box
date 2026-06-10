@@ -267,6 +267,10 @@ export default function InstanceScreen() {
     query: { enabled: !!instanceId },
   });
 
+  const scrollToEnd = useCallback(() => {
+    setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 150);
+  }, []);
+
   const scrollToBlock = useCallback(() => {
     if (!highlightBlockId || !scrollViewRef.current) return;
     const ref = blockRefs.current.get(highlightBlockId);
@@ -343,9 +347,15 @@ export default function InstanceScreen() {
             <ActivityIndicator color={colors.primary} />
           </View>
         ) : (
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            style={{ flex: 1 }}
+            keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + 44 : 0}
+          >
           <ScrollView
             ref={scrollViewRef}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
             contentContainerStyle={[
               styles.scrollContent,
               { paddingBottom: bottomPad + 32 },
@@ -390,12 +400,14 @@ export default function InstanceScreen() {
                       highlightEventId={
                         block.id === highlightBlockId ? highlightEventId : undefined
                       }
+                      onScrollRequest={scrollToEnd}
                     />
                   </View>
                 ))}
               </View>
             )}
           </ScrollView>
+          </KeyboardAvoidingView>
         )}
       </View>
 

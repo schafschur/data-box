@@ -262,11 +262,13 @@ function EditForm({
   onSave,
   onCancel,
   isSaving,
+  onScrollRequest,
 }: {
   event: CalendarEvent;
   onSave: (title: string, date: string, description: string) => void;
   onCancel: () => void;
   isSaving: boolean;
+  onScrollRequest?: () => void;
 }) {
   const colors = useColors();
   const [title, setTitle] = useState(event.title);
@@ -288,6 +290,7 @@ function EditForm({
         onChangeText={setTitle}
         returnKeyType="next"
         autoFocus
+        onFocus={onScrollRequest}
       />
       <TextInput
         style={[styles.input, { color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius, fontFamily: "Inter_400Regular" }]}
@@ -297,6 +300,7 @@ function EditForm({
         onChangeText={setDate}
         keyboardType="numbers-and-punctuation"
         returnKeyType="next"
+        onFocus={onScrollRequest}
       />
       <TextInput
         style={[styles.input, styles.inputMulti, { color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius, fontFamily: "Inter_400Regular" }]}
@@ -306,6 +310,7 @@ function EditForm({
         onChangeText={setDescription}
         multiline
         numberOfLines={2}
+        onFocus={onScrollRequest}
       />
       <View style={styles.editFormButtons}>
         <Pressable
@@ -333,9 +338,11 @@ function EditForm({
 export function CalendarBlock({
   block,
   highlightEventId,
+  onScrollRequest,
 }: {
   block: Block;
   highlightEventId?: number;
+  onScrollRequest?: () => void;
 }) {
   const colors = useColors();
   const queryClient = useQueryClient();
@@ -552,6 +559,7 @@ export function CalendarBlock({
                 onSave={handleSave}
                 onCancel={() => setEditingEvent(null)}
                 isSaving={updateEvent.isPending}
+                onScrollRequest={onScrollRequest}
               />
             ) : (
               <DraggableEventRow
@@ -562,7 +570,7 @@ export function CalendarBlock({
                 isHoverTarget={hoverIndex === index && draggingId !== event.id}
                 callbacks={dragCallbacks}
                 highlighted={highlightEventId === event.id}
-                onEdit={setEditingEvent}
+                onEdit={(ev) => { setEditingEvent(ev); onScrollRequest?.(); }}
                 onDelete={handleDelete}
                 isDeletingId={deletingId}
               />
@@ -581,6 +589,7 @@ export function CalendarBlock({
             onChangeText={setAddTitle}
             returnKeyType="next"
             autoFocus
+            onFocus={onScrollRequest}
           />
           <TextInput
             style={[styles.input, { color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius, fontFamily: "Inter_400Regular" }]}
@@ -591,6 +600,7 @@ export function CalendarBlock({
             keyboardType="numbers-and-punctuation"
             returnKeyType="done"
             onSubmitEditing={handleAdd}
+            onFocus={onScrollRequest}
           />
           <View style={styles.formButtons}>
             <Pressable
@@ -614,7 +624,7 @@ export function CalendarBlock({
         </View>
       ) : (
         <Pressable
-          onPress={() => setAdding(true)}
+          onPress={() => { setAdding(true); onScrollRequest?.(); }}
           style={({ pressed }) => [
             styles.addBtn,
             { borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.7 : 1 },

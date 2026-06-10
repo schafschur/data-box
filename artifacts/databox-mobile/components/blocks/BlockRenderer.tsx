@@ -33,9 +33,11 @@ function importanceBadgeColor(imp: number): { bg: string; text: string } {
 export function BlockRenderer({
   block,
   highlightEventId,
+  onScrollRequest,
 }: {
   block: Block;
   highlightEventId?: number;
+  onScrollRequest?: () => void;
 }) {
   const colors = useColors();
   const icon = BLOCK_TYPE_ICONS[block.type] ?? "box";
@@ -78,11 +80,11 @@ export function BlockRenderer({
         {block.type === "richtext" && <RichTextBlock block={block} />}
         {block.type === "todo" && <TodoBlock block={block} />}
         {block.type === "calendar" && (
-          <CalendarBlock block={block} highlightEventId={highlightEventId} />
+          <CalendarBlock block={block} highlightEventId={highlightEventId} onScrollRequest={onScrollRequest} />
         )}
         {block.type === "photo" && <PhotoBlock block={block} />}
         {block.type === "pdf" && <PdfBlock block={block} />}
-        {block.type === "list" && <ListBlock block={block} />}
+        {block.type === "list" && <ListBlock block={block} onScrollRequest={onScrollRequest} />}
         {block.type === "contact" && <ContactBlock block={block} />}
       </View>
     </View>
