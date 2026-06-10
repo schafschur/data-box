@@ -367,6 +367,16 @@ export interface GridRowSeries {
   values: Record<string, number | null>;
 }
 
+export interface GridWeekRowSeries {
+  label: string;
+  values: Record<string, number | null>;
+}
+
+export interface GridWeekOverWeek {
+  weeks: string[];
+  series: GridWeekRowSeries[];
+}
+
 export interface GridBlockStat {
   blockId: number;
   /** @nullable */
@@ -379,6 +389,7 @@ export interface GridBlockStat {
   lowest: GridCellPeak | null;
   dayAverages: GridDayAverage[];
   rows: GridRowSeries[];
+  weekOverWeek: GridWeekOverWeek;
 }
 
 export interface InstanceAnalysis {
@@ -474,6 +485,7 @@ export interface GridRow {
   blockId: number;
   label: string | null;
   position: number;
+  weekOf: string | null;
   mon: string | null;
   tue: string | null;
   wed: string | null;
@@ -487,10 +499,12 @@ export interface GridRow {
 
 export interface GridRowInput {
   label?: string | null;
+  weekOf?: string | null;
 }
 
 export interface GridRowUpdate {
   label?: string | null;
+  weekOf?: string | null;
   mon?: string | null;
   tue?: string | null;
   wed?: string | null;

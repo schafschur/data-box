@@ -8,7 +8,7 @@ import {
   getListGridRowsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
@@ -23,6 +23,30 @@ const DAY_LABELS: Record<DayKey, string> = {
   sat: "Sat",
   sun: "Sun",
 };
+
+function getMondayOfWeek(date: Date): string {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  d.setDate(diff);
+  return d.toISOString().split("T")[0];
+}
+
+function addWeeks(weekOf: string, n: number): string {
+  const [y, m, d] = weekOf.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + n * 7);
+  return dt.toISOString().split("T")[0];
+}
+
+function formatWeekLabel(weekOf: string): string {
+  const [y, m, d] = weekOf.split("-").map(Number);
+  const mon = new Date(y, m - 1, d);
+  const sun = new Date(y, m - 1, d + 6);
+  const fmt = (dt: Date) =>
+    dt.toLocaleDateString("default", { month: "short", day: "numeric" });
+  return `${fmt(mon)} – ${fmt(sun)}`;
+}
 
 function parseCell(raw: string): string | null {
   const normalized = raw.replace(",", ".").trim();
@@ -102,17 +126,23 @@ function getDayValue(row: GridRow, day: DayKey): string | null {
 
 export function GridBlock({ block }: { block: Block }) {
   const queryClient = useQueryClient();
-  const { data: rows = [], isLoading } = useListGridRows(block.id);
+  const [selectedWeek, setSelectedWeek] = useState(() => getMondayOfWeek(new Date()));
+  const currentWeek = getMondayOfWeek(new Date());
+
+  const { data: rows = [], isLoading } = useListGridRows(block.id, selectedWeek);
   const createGridRow = useCreateGridRow();
   const updateGridRow = useUpdateGridRow();
   const deleteGridRow = useDeleteGridRow();
 
   const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: getListGridRowsQueryKey(block.id) });
-  }, [queryClient, block.id]);
+    queryClient.invalidateQueries({ queryKey: getListGridRowsQueryKey(block.id, selectedWeek) });
+  }, [queryClient, block.id, selectedWeek]);
 
   const addRow = () => {
-    createGridRow.mutate({ blockId: block.id, data: {} }, { onSuccess: invalidate });
+    createGridRow.mutate(
+      { blockId: block.id, data: { weekOf: selectedWeek } },
+      { onSuccess: invalidate }
+    );
   };
 
   const updateCell = (rowId: number, day: DayKey, value: string | null) => {
@@ -130,6 +160,8 @@ export function GridBlock({ block }: { block: Block }) {
     deleteGridRow.mutate({ id: rowId }, { onSuccess: invalidate });
   };
 
+  const isCurrentWeek = selectedWeek === currentWeek;
+
   if (isLoading) {
     return (
       <div className="h-12 flex items-center justify-center text-muted-foreground text-sm">
@@ -140,6 +172,40 @@ export function GridBlock({ block }: { block: Block }) {
 
   return (
     <div className="space-y-3">
+      {/* Week navigation header */}
+      <div className="flex items-center justify-between gap-2">
+        <button
+          onClick={() => setSelectedWeek((w) => addWeeks(w, -1))}
+          className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          title="Previous week"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+
+        <div className="flex items-center gap-1.5 text-sm font-medium">
+          <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
+          <span>{formatWeekLabel(selectedWeek)}</span>
+        </div>
+
+        <div className="flex items-center gap-1">
+          {!isCurrentWeek && (
+            <button
+              onClick={() => setSelectedWeek(currentWeek)}
+              className="text-xs text-primary hover:underline px-1"
+            >
+              Today
+            </button>
+          )}
+          <button
+            onClick={() => setSelectedWeek((w) => addWeeks(w, 1))}
+            className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            title="Next week"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full border-collapse">
           <thead>
@@ -165,7 +231,7 @@ export function GridBlock({ block }: { block: Block }) {
                   colSpan={9}
                   className="text-center text-sm text-muted-foreground py-8 italic"
                 >
-                  No rows yet — add one below.
+                  No rows for this week — add one below.
                 </td>
               </tr>
             ) : (

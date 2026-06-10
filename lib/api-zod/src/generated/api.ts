@@ -763,7 +763,8 @@ export const CreateGridRowParams = zod.object({
 })
 
 export const CreateGridRowBody = zod.object({
-  "label": zod.string().nullish()
+  "label": zod.string().nullish(),
+  "weekOf": zod.string().nullish(),
 })
 
 export const UpdateGridRowParams = zod.object({
@@ -772,6 +773,7 @@ export const UpdateGridRowParams = zod.object({
 
 export const UpdateGridRowBody = zod.object({
   "label": zod.string().nullish(),
+  "weekOf": zod.string().nullish(),
   "mon": gridCellValue,
   "tue": gridCellValue,
   "wed": gridCellValue,

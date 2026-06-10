@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { eq, asc, max } from "drizzle-orm";
+import { eq, asc, max, and, isNull } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { gridRowsTable } from "@workspace/db";
 import {
@@ -15,10 +15,16 @@ const router: IRouter = Router();
 
 router.get("/blocks/:blockId/grid-rows", async (req: Request, res: Response) => {
   const { blockId } = ListGridRowsParams.parse(req.params);
+  const weekOf = req.query.weekOf as string | undefined;
+
   const rows = await db
     .select()
     .from(gridRowsTable)
-    .where(eq(gridRowsTable.blockId, blockId))
+    .where(
+      weekOf
+        ? and(eq(gridRowsTable.blockId, blockId), eq(gridRowsTable.weekOf, weekOf))
+        : and(eq(gridRowsTable.blockId, blockId), isNull(gridRowsTable.weekOf))
+    )
     .orderBy(asc(gridRowsTable.position), asc(gridRowsTable.id));
   res.json(rows);
 });
@@ -31,15 +37,22 @@ router.post("/blocks/:blockId/grid-rows", async (req: Request, res: Response) =>
     return;
   }
 
+  const weekOf = parsed.data.weekOf ?? null;
+
   const [maxResult] = await db
     .select({ maxPos: max(gridRowsTable.position) })
     .from(gridRowsTable)
-    .where(eq(gridRowsTable.blockId, blockId));
+    .where(
+      weekOf
+        ? and(eq(gridRowsTable.blockId, blockId), eq(gridRowsTable.weekOf, weekOf))
+        : and(eq(gridRowsTable.blockId, blockId), isNull(gridRowsTable.weekOf))
+    );
   const nextPosition = (maxResult?.maxPos ?? -1) + 1;
 
+  const { weekOf: _weekOf, ...rest } = parsed.data;
   const [row] = await db
     .insert(gridRowsTable)
-    .values({ blockId, position: nextPosition, ...parsed.data })
+    .values({ blockId, position: nextPosition, weekOf, ...rest })
     .returning();
   res.status(201).json(row);
 });

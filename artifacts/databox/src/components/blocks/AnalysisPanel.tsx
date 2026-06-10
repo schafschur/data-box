@@ -96,6 +96,12 @@ const GRID_DAY_LABELS: Record<string, string> = {
 };
 const LINE_COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"];
 
+function formatWeekShort(weekOf: string): string {
+  const [y, m, d] = weekOf.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  return dt.toLocaleDateString("default", { month: "short", day: "numeric" });
+}
+
 function GridBlockAnalytics({ stat }: { stat: GridBlockStat }) {
   const hasMultipleRows = stat.rowCount > 1;
   const [yMinRaw, setYMinRaw] = useState("");
@@ -106,6 +112,9 @@ function GridBlockAnalytics({ stat }: { stat: GridBlockStat }) {
   const yMax = yMaxRaw.trim() !== "" && !isNaN(Number(yMaxRaw)) ? Number(yMaxRaw) : "auto";
   const yDomain: [number | "auto", number | "auto"] = [yMin, yMax];
   const hasCustomRange = yMin !== "auto" || yMax !== "auto";
+
+  const wow = stat.weekOverWeek;
+  const hasWeekOverWeek = wow && wow.weeks.length >= 2 && wow.series.length > 0;
 
   const barData = GRID_DAY_ORDER.map((day) => ({
     day: GRID_DAY_LABELS[day],
@@ -119,6 +128,16 @@ function GridBlockAnalytics({ stat }: { stat: GridBlockStat }) {
     });
     return entry;
   });
+
+  const wowLineData = hasWeekOverWeek
+    ? wow.weeks.map((week) => {
+        const entry: Record<string, string | number | null> = { week: formatWeekShort(week) };
+        wow.series.forEach((s) => {
+          entry[s.label] = s.values[week] ?? null;
+        });
+        return entry;
+      })
+    : [];
 
   return (
     <Card className="bg-card shadow-sm">
@@ -244,7 +263,7 @@ function GridBlockAnalytics({ stat }: { stat: GridBlockStat }) {
           )}
         </div>
 
-        {/* Charts */}
+        {/* Weekday charts */}
         <div className={cn("grid gap-4", hasMultipleRows ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1")}>
           {/* Bar chart: weekday averages */}
           <div>
@@ -310,6 +329,41 @@ function GridBlockAnalytics({ stat }: { stat: GridBlockStat }) {
             </div>
           )}
         </div>
+
+        {/* Week-over-week chart */}
+        {hasWeekOverWeek && (
+          <div>
+            <div className="flex items-center gap-1.5 mb-2">
+              <p className="text-xs text-muted-foreground">Week-over-week</p>
+              <span className="text-xs text-muted-foreground/60">· {wow.weeks.length} weeks</span>
+            </div>
+            <div className="h-[190px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={wowLineData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
+                  <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "var(--popover)", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "12px" }}
+                  />
+                  <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize: "11px", paddingTop: "4px" }} />
+                  {wow.series.map((s, i) => (
+                    <Line
+                      key={s.label}
+                      type="monotone"
+                      dataKey={s.label}
+                      stroke={LINE_COLORS[i % LINE_COLORS.length]}
+                      strokeWidth={2}
+                      dot={{ r: 3, fill: LINE_COLORS[i % LINE_COLORS.length], strokeWidth: 0 }}
+                      activeDot={{ r: 4 }}
+                      connectNulls
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

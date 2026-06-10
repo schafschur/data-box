@@ -256,7 +256,52 @@ router.get("/instances/:id/analysis", async (req: Request, res: Response) => {
       ) as Record<string, number | null>,
     }));
 
-    return { blockId: block.id, blockTitle: block.title, rowCount: rows.length, cellCount, highest, lowest, dayAverages, rows: rowSeries };
+    // ── Week-over-week series ────────────────────────────────────────
+    // Group rows that have a week_of set by (week_of, label)
+    const weekRows = rows.filter((r) => r.weekOf !== null);
+    const weekSet = new Set<string>();
+    for (const r of weekRows) {
+      if (r.weekOf) weekSet.add(r.weekOf);
+    }
+    const weeks = [...weekSet].sort();
+
+    // Compute per-row per-week average (avg of all day values for that row)
+    // Group by label, then by week
+    const labelMap = new Map<string, Map<string, number[]>>();
+    for (const r of weekRows) {
+      const label = r.label ?? "Row";
+      const week = r.weekOf!;
+      if (!labelMap.has(label)) labelMap.set(label, new Map());
+      const weekMap = labelMap.get(label)!;
+      if (!weekMap.has(week)) weekMap.set(week, []);
+      for (const day of GRID_DAYS) {
+        const raw = r[day as keyof typeof r];
+        if (raw !== null && raw !== undefined) {
+          const val = parseFloat(String(raw));
+          if (!isNaN(val)) weekMap.get(week)!.push(val);
+        }
+      }
+    }
+
+    const weekOverWeekSeries = [...labelMap.entries()].map(([label, weekMap]) => ({
+      label,
+      values: Object.fromEntries(
+        weeks.map((week) => {
+          const vals = weekMap.get(week) ?? [];
+          const avg = vals.length > 0
+            ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 100) / 100
+            : null;
+          return [week, avg];
+        })
+      ) as Record<string, number | null>,
+    }));
+
+    const weekOverWeek = {
+      weeks,
+      series: weekOverWeekSeries,
+    };
+
+    return { blockId: block.id, blockTitle: block.title, rowCount: rows.length, cellCount, highest, lowest, dayAverages, rows: rowSeries, weekOverWeek };
   }).filter((s) => s.cellCount > 0);
 
   // ── Activity / freshness (last touched per block type) ───────────────

@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp, numeric } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, timestamp, numeric, date } from "drizzle-orm/pg-core";
 import { blocksTable } from "./blocks";
 
 export const gridRowsTable = pgTable("grid_rows", {
@@ -6,6 +6,7 @@ export const gridRowsTable = pgTable("grid_rows", {
   blockId: integer("block_id").notNull().references(() => blocksTable.id, { onDelete: "cascade" }),
   label: text("label"),
   position: integer("position").notNull().default(0),
+  weekOf: date("week_of"),
   mon: numeric("mon"),
   tue: numeric("tue"),
   wed: numeric("wed"),

@@ -2912,30 +2912,34 @@ export const useReorderListItems = <TError = ErrorType<unknown>, TContext = unkn
     ...options?.mutation,
   });
 
-export const getListGridRowsUrl = (blockId: number) =>
-  `/api/blocks/${blockId}/grid-rows`;
+export const getListGridRowsUrl = (blockId: number, weekOf?: string) => {
+  const base = `/api/blocks/${blockId}/grid-rows`;
+  return weekOf ? `${base}?weekOf=${encodeURIComponent(weekOf)}` : base;
+};
 
-export const getListGridRowsQueryKey = (blockId: number) =>
-  [getListGridRowsUrl(blockId)] as const;
+export const getListGridRowsQueryKey = (blockId: number, weekOf?: string) =>
+  [getListGridRowsUrl(blockId), weekOf] as const;
 
 export const listGridRows = async (
   blockId: number,
+  weekOf?: string,
   options?: SecondParameter<typeof customFetch>
 ): Promise<GridRow[]> =>
-  customFetch<GridRow[]>(getListGridRowsUrl(blockId), options);
+  customFetch<GridRow[]>(getListGridRowsUrl(blockId, weekOf), options);
 
 export const getListGridRowsQueryOptions = <TData = GridRow[], TError = ErrorType<unknown>>(
   blockId: number,
+  weekOf?: string,
   options?: {
     query?: UseQueryOptions<GridRow[], TError, TData>;
     request?: SecondParameter<typeof customFetch>;
   }
 ) => {
   const { query: queryOptions } = options ?? {};
-  const queryKey = queryOptions?.queryKey ?? getListGridRowsQueryKey(blockId);
+  const queryKey = queryOptions?.queryKey ?? getListGridRowsQueryKey(blockId, weekOf);
   return {
     queryKey,
-    queryFn: () => listGridRows(blockId),
+    queryFn: () => listGridRows(blockId, weekOf),
     enabled: !!blockId,
     ...queryOptions,
   } as UseQueryOptions<GridRow[], TError, TData> & { queryKey: QueryKey };
@@ -2943,12 +2947,13 @@ export const getListGridRowsQueryOptions = <TData = GridRow[], TError = ErrorTyp
 
 export function useListGridRows<TData = GridRow[], TError = ErrorType<unknown>>(
   blockId: number,
+  weekOf?: string,
   options?: {
     query?: UseQueryOptions<GridRow[], TError, TData>;
     request?: SecondParameter<typeof customFetch>;
   }
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListGridRowsQueryOptions<TData, TError>(blockId, options);
+  const queryOptions = getListGridRowsQueryOptions<TData, TError>(blockId, weekOf, options);
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
   return { ...query, queryKey: queryOptions.queryKey };
 }
