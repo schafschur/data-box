@@ -9,6 +9,7 @@ import {
   Users, List, FileIcon, Clock, AlertTriangle, Grid, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 import type { ComponentType } from "react";
 
 function pct(num: number, total: number) {
@@ -97,6 +98,13 @@ const LINE_COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec
 
 function GridBlockAnalytics({ stat }: { stat: GridBlockStat }) {
   const hasMultipleRows = stat.rowCount > 1;
+  const [yMinRaw, setYMinRaw] = useState("");
+  const [yMaxRaw, setYMaxRaw] = useState("");
+
+  const yMin = yMinRaw.trim() !== "" && !isNaN(Number(yMinRaw)) ? Number(yMinRaw) : "auto";
+  const yMax = yMaxRaw.trim() !== "" && !isNaN(Number(yMaxRaw)) ? Number(yMaxRaw) : "auto";
+  const yDomain: [number | "auto", number | "auto"] = [yMin, yMax];
+  const hasCustomRange = yMin !== "auto" || yMax !== "auto";
 
   const barData = GRID_DAY_ORDER.map((day) => ({
     day: GRID_DAY_LABELS[day],
@@ -157,6 +165,42 @@ function GridBlockAnalytics({ stat }: { stat: GridBlockStat }) {
           </div>
         )}
 
+        {/* Y-axis range controls */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground shrink-0">Y axis</span>
+          <div className="flex items-center gap-1.5">
+            <input
+              type="number"
+              value={yMinRaw}
+              onChange={(e) => setYMinRaw(e.target.value)}
+              placeholder="min"
+              className={cn(
+                "w-16 h-6 px-2 text-xs rounded-md border bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-ring",
+                hasCustomRange && yMin !== "auto" ? "border-indigo-400/60" : "border-border"
+              )}
+            />
+            <span className="text-xs text-muted-foreground">–</span>
+            <input
+              type="number"
+              value={yMaxRaw}
+              onChange={(e) => setYMaxRaw(e.target.value)}
+              placeholder="max"
+              className={cn(
+                "w-16 h-6 px-2 text-xs rounded-md border bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-ring",
+                hasCustomRange && yMax !== "auto" ? "border-indigo-400/60" : "border-border"
+              )}
+            />
+          </div>
+          {hasCustomRange && (
+            <button
+              onClick={() => { setYMinRaw(""); setYMaxRaw(""); }}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              reset
+            </button>
+          )}
+        </div>
+
         {/* Charts */}
         <div className={cn("grid gap-4", hasMultipleRows ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1")}>
           {/* Bar chart: weekday averages */}
@@ -167,7 +211,13 @@ function GridBlockAnalytics({ stat }: { stat: GridBlockStat }) {
                 <BarChart data={barData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
                   <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    domain={yDomain}
+                    allowDataOverflow={hasCustomRange}
+                  />
                   <Tooltip
                     cursor={{ fill: "var(--muted)" }}
                     contentStyle={{ backgroundColor: "var(--popover)", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "12px" }}
@@ -188,7 +238,13 @@ function GridBlockAnalytics({ stat }: { stat: GridBlockStat }) {
                   <LineChart data={lineData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
                     <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                      domain={yDomain}
+                      allowDataOverflow={hasCustomRange}
+                    />
                     <Tooltip
                       contentStyle={{ backgroundColor: "var(--popover)", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "12px" }}
                     />
