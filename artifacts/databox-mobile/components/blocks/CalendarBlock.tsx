@@ -149,9 +149,9 @@ function EventRow({
             right: 0,
             width: 0,
             height: 0,
-            borderLeftWidth: 32,
+            borderLeftWidth: 24,
             borderLeftColor: "transparent",
-            borderBottomWidth: 32,
+            borderBottomWidth: 24,
             borderBottomColor: (event as { locationColor?: string | null }).locationColor!,
           }}
         />

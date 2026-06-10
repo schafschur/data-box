@@ -239,8 +239,8 @@ function EventRow({
             right: 0,
             width: 0,
             height: 0,
-            borderLeft: "50px solid transparent",
-            borderBottom: `50px solid ${locationColor}`,
+            borderLeft: "24px solid transparent",
+            borderBottom: `24px solid ${locationColor}`,
           }}
         />
       )}
