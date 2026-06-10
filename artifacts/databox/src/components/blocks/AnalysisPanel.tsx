@@ -1,11 +1,12 @@
 import { useGetInstanceAnalysis, getGetInstanceAnalysisQueryKey } from "@workspace/api-client-react";
+import type { GridBlockStat } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
+import { BarChart, Bar, LineChart, Line, Legend, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   CheckCircle2, Calendar as CalendarIcon, Hash, Image as ImageIcon,
   MessageSquare, StickyNote, CalendarDays, FileText, CheckSquare,
-  BookOpen, Users, List, FileIcon, Clock, AlertTriangle,
+  Users, List, FileIcon, Clock, AlertTriangle, Grid, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ComponentType } from "react";
@@ -63,6 +64,7 @@ const BLOCK_ICONS: Record<string, ComponentType<{ className?: string }>> = {
   pdf:      FileIcon,
   contact:  Users,
   list:     List,
+  grid:     Grid,
 };
 
 const BLOCK_COLORS: Record<string, string> = {
@@ -73,6 +75,7 @@ const BLOCK_COLORS: Record<string, string> = {
   pdf:      "text-red-500",
   contact:  "text-pink-500",
   list:     "text-teal-500",
+  grid:     "text-indigo-500",
 };
 
 const BLOCK_BG: Record<string, string> = {
@@ -83,7 +86,135 @@ const BLOCK_BG: Record<string, string> = {
   pdf:      "bg-red-500/10",
   contact:  "bg-pink-500/10",
   list:     "bg-teal-500/10",
+  grid:     "bg-indigo-500/10",
 };
+
+const GRID_DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+const GRID_DAY_LABELS: Record<string, string> = {
+  mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun",
+};
+const LINE_COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"];
+
+function GridBlockAnalytics({ stat }: { stat: GridBlockStat }) {
+  const hasMultipleRows = stat.rowCount > 1;
+
+  const barData = GRID_DAY_ORDER.map((day) => ({
+    day: GRID_DAY_LABELS[day],
+    avg: stat.dayAverages.find((d) => d.day === day)?.avg ?? null,
+  }));
+
+  const lineData = GRID_DAY_ORDER.map((day) => {
+    const entry: Record<string, string | number | null> = { day: GRID_DAY_LABELS[day] };
+    stat.rows.forEach((row, i) => {
+      entry[row.label ?? `Row ${i + 1}`] = row.values[day] ?? null;
+    });
+    return entry;
+  });
+
+  return (
+    <Card className="bg-card shadow-sm">
+      <CardHeader className="p-4 pb-3">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-indigo-500/10 rounded-md shrink-0">
+            <Grid className="w-4 h-4 text-indigo-500" />
+          </div>
+          <CardTitle className="text-sm font-medium leading-none">
+            {stat.blockTitle ?? "Untitled Grid"}
+          </CardTitle>
+          <span className="text-xs text-muted-foreground ml-auto shrink-0">
+            {stat.rowCount} {stat.rowCount === 1 ? "row" : "rows"} · {stat.cellCount} cells filled
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="p-4 pt-0 space-y-4">
+        {/* Peak callout chips */}
+        {(stat.highest || stat.lowest) && (
+          <div className="flex flex-wrap gap-2">
+            {stat.highest && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs">
+                <ArrowUp className="w-3 h-3 text-emerald-500 shrink-0" />
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  {stat.highest.value}
+                </span>
+                <span className="text-muted-foreground">
+                  {GRID_DAY_LABELS[stat.highest.day]}
+                  {stat.highest.rowLabel ? ` · ${stat.highest.rowLabel}` : ""}
+                </span>
+              </div>
+            )}
+            {stat.lowest && stat.lowest.value !== stat.highest?.value && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs">
+                <ArrowDown className="w-3 h-3 text-rose-500 shrink-0" />
+                <span className="font-semibold text-rose-600 dark:text-rose-400">
+                  {stat.lowest.value}
+                </span>
+                <span className="text-muted-foreground">
+                  {GRID_DAY_LABELS[stat.lowest.day]}
+                  {stat.lowest.rowLabel ? ` · ${stat.lowest.rowLabel}` : ""}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Charts */}
+        <div className={cn("grid gap-4", hasMultipleRows ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1")}>
+          {/* Bar chart: weekday averages */}
+          <div>
+            <p className="text-xs text-muted-foreground mb-2">Average per weekday</p>
+            <div className="h-[170px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={barData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                  <Tooltip
+                    cursor={{ fill: "var(--muted)" }}
+                    contentStyle={{ backgroundColor: "var(--popover)", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "12px" }}
+                    formatter={(v: number) => [v, "avg"]}
+                  />
+                  <Bar dataKey="avg" radius={[4, 4, 0, 0]} fill="#6366f1" fillOpacity={0.8} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Line chart: per-row trends */}
+          {hasMultipleRows && (
+            <div>
+              <p className="text-xs text-muted-foreground mb-2">Trends per row</p>
+              <div className="h-[170px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={lineData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
+                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "var(--popover)", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "12px" }}
+                    />
+                    <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize: "11px", paddingTop: "4px" }} />
+                    {stat.rows.map((row, i) => (
+                      <Line
+                        key={row.rowId}
+                        type="monotone"
+                        dataKey={row.label ?? `Row ${i + 1}`}
+                        stroke={LINE_COLORS[i % LINE_COLORS.length]}
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: LINE_COLORS[i % LINE_COLORS.length], strokeWidth: 0 }}
+                        activeDot={{ r: 4 }}
+                        connectNulls
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 function MetadataRow({ label, icon: Icon, value, total }: {
   label: string;
@@ -129,6 +260,7 @@ export function AnalysisPanel({ instanceId }: { instanceId: number }) {
 
   const {
     textStats, todoStats, calendarStats, photoStats,
+    gridStats           = [],
     blockComposition    = [],
     upcomingEventsList  = [],
     activityStats       = [],
@@ -158,6 +290,11 @@ export function AnalysisPanel({ instanceId }: { instanceId: number }) {
 
   return (
     <div className="space-y-6">
+
+      {/* ── Grid analytics ────────────────────────────────────────── */}
+      {gridStats.map((stat) => (
+        <GridBlockAnalytics key={stat.blockId} stat={stat} />
+      ))}
 
       {/* ── Block composition map ──────────────────────────────────── */}
       <Card className="bg-card shadow-sm">

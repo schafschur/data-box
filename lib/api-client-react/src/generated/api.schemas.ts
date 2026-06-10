@@ -346,9 +346,45 @@ export interface OverdueStats {
   items: OverdueTodoItem[];
 }
 
+export interface GridCellPeak {
+  value: number;
+  /** @nullable */
+  rowLabel: string | null;
+  day: string;
+}
+
+export interface GridDayAverage {
+  day: string;
+  /** @nullable */
+  avg: number | null;
+  count: number;
+}
+
+export interface GridRowSeries {
+  rowId: number;
+  /** @nullable */
+  label: string | null;
+  values: Record<string, number | null>;
+}
+
+export interface GridBlockStat {
+  blockId: number;
+  /** @nullable */
+  blockTitle: string | null;
+  rowCount: number;
+  cellCount: number;
+  /** @nullable */
+  highest: GridCellPeak | null;
+  /** @nullable */
+  lowest: GridCellPeak | null;
+  dayAverages: GridDayAverage[];
+  rows: GridRowSeries[];
+}
+
 export interface InstanceAnalysis {
   instanceId: number;
   totalBlocks: number;
+  gridStats: GridBlockStat[];
   textStats: TextStats;
   todoStats: TodoStats;
   calendarStats: CalendarStats;

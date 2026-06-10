@@ -9,6 +9,7 @@ import {
   photosTable,
   contactCardsTable,
   listItemsTable,
+  gridRowsTable,
 } from "@workspace/db";
 import { GetInstanceAnalysisParams } from "@workspace/api-zod";
 
@@ -31,7 +32,11 @@ const BLOCK_LABELS: Record<string, string> = {
   pdf: "PDF",
   contact: "Contacts",
   list: "List",
+  grid: "Grid",
 };
+
+const GRID_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+type GridDay = typeof GRID_DAYS[number];
 
 function extractKeywords(html: string): Map<string, number> {
   const text = html.replace(/<[^>]+>/g, " ").toLowerCase();
@@ -92,14 +97,16 @@ router.get("/instances/:id/analysis", async (req: Request, res: Response) => {
   const pdfBlocks     = blocks.filter((b) => b.type === "pdf");
   const contactBlocks = blocks.filter((b) => b.type === "contact");
   const listBlocks    = blocks.filter((b) => b.type === "list");
+  const gridBlocks    = blocks.filter((b) => b.type === "grid");
 
   const todoBlockIds     = todoBlocks.map((b) => b.id);
   const calendarBlockIds = calendarBlocks.map((b) => b.id);
   const photoBlockIds    = photoBlocks.map((b) => b.id);
   const contactBlockIds  = contactBlocks.map((b) => b.id);
   const listBlockIds     = listBlocks.map((b) => b.id);
+  const gridBlockIds     = gridBlocks.map((b) => b.id);
 
-  const [allTodoItems, allCalendarEvents, allPhotos, allContactCards, allListItems] =
+  const [allTodoItems, allCalendarEvents, allPhotos, allContactCards, allListItems, allGridRows] =
     await Promise.all([
       todoBlockIds.length
         ? db.select().from(todoItemsTable).where(inArray(todoItemsTable.blockId, todoBlockIds))
@@ -115,6 +122,9 @@ router.get("/instances/:id/analysis", async (req: Request, res: Response) => {
         : Promise.resolve([]),
       listBlockIds.length
         ? db.select().from(listItemsTable).where(inArray(listItemsTable.blockId, listBlockIds))
+        : Promise.resolve([]),
+      gridBlockIds.length
+        ? db.select().from(gridRowsTable).where(inArray(gridRowsTable.blockId, gridBlockIds))
         : Promise.resolve([]),
     ]);
 
@@ -198,6 +208,57 @@ router.get("/instances/:id/analysis", async (req: Request, res: Response) => {
     blockTitle: blockTitleMap.get(e.blockId) ?? null,
   }));
 
+  // ── Grid stats ────────────────────────────────────────────────────────
+  const gridStats = gridBlocks.map((block) => {
+    const rows = allGridRows.filter((r) => r.blockId === block.id);
+
+    let highest: { value: number; rowLabel: string | null; day: string } | null = null;
+    let lowest:  { value: number; rowLabel: string | null; day: string } | null = null;
+    let cellCount = 0;
+
+    const dayTotals: Record<GridDay, { sum: number; count: number }> = {
+      mon: { sum: 0, count: 0 }, tue: { sum: 0, count: 0 }, wed: { sum: 0, count: 0 },
+      thu: { sum: 0, count: 0 }, fri: { sum: 0, count: 0 }, sat: { sum: 0, count: 0 },
+      sun: { sum: 0, count: 0 },
+    };
+
+    for (const row of rows) {
+      for (const day of GRID_DAYS) {
+        const raw = row[day as keyof typeof row];
+        if (raw === null || raw === undefined) continue;
+        const val = parseFloat(String(raw));
+        if (isNaN(val)) continue;
+        cellCount++;
+        dayTotals[day].sum += val;
+        dayTotals[day].count++;
+        if (highest === null || val > highest.value) highest = { value: val, rowLabel: row.label, day };
+        if (lowest  === null || val < lowest.value)  lowest  = { value: val, rowLabel: row.label, day };
+      }
+    }
+
+    const dayAverages = GRID_DAYS.map((day) => ({
+      day,
+      avg:   dayTotals[day].count > 0
+        ? Math.round((dayTotals[day].sum / dayTotals[day].count) * 100) / 100
+        : null,
+      count: dayTotals[day].count,
+    }));
+
+    const rowSeries = rows.map((row) => ({
+      rowId: row.id,
+      label: row.label,
+      values: Object.fromEntries(
+        GRID_DAYS.map((day) => {
+          const raw = row[day as keyof typeof row];
+          const val = raw !== null && raw !== undefined ? parseFloat(String(raw)) : null;
+          return [day, val !== null && !isNaN(val) ? val : null];
+        })
+      ) as Record<string, number | null>,
+    }));
+
+    return { blockId: block.id, blockTitle: block.title, rowCount: rows.length, cellCount, highest, lowest, dayAverages, rows: rowSeries };
+  }).filter((s) => s.cellCount > 0);
+
   // ── Activity / freshness (last touched per block type) ───────────────
   const activityMap = new Map<string, Date>();
 
@@ -213,6 +274,7 @@ router.get("/instances/:id/analysis", async (req: Request, res: Response) => {
   for (const b of calendarBlocks) updateActivity("calendar", maxDate(b.updatedAt, ...allCalendarEvents.filter(e => e.blockId === b.id).map(e => e.updatedAt)));
   for (const b of contactBlocks) updateActivity("contact",   maxDate(b.updatedAt, ...allContactCards.filter(c => c.blockId === b.id).map(c => c.updatedAt)));
   for (const b of listBlocks)    updateActivity("list",      maxDate(b.updatedAt, ...allListItems.filter(i => i.blockId === b.id).map(i => i.updatedAt)));
+  for (const b of gridBlocks)    updateActivity("grid",      maxDate(b.updatedAt, ...allGridRows.filter(r => r.blockId === b.id).map(r => r.updatedAt)));
 
   const activityStats = [...activityMap.entries()]
     .sort(([, a], [, b]) => b.getTime() - a.getTime())
@@ -244,6 +306,7 @@ router.get("/instances/:id/analysis", async (req: Request, res: Response) => {
   res.json({
     instanceId:   id,
     totalBlocks:  blocks.length,
+    gridStats,
     textStats: {
       blockCount:     textBlocks.length,
       totalWordCount,
