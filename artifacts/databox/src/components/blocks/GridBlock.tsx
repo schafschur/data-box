@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import type { Block, GridRow } from "@workspace/api-client-react";
+import { useState, useCallback } from "react";
+import type { Block } from "@workspace/api-client-react";
 import {
   useListGridRows,
   useCreateGridRow,
@@ -15,28 +15,29 @@ const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 type DayKey = (typeof DAYS)[number];
 
 const DAY_LABELS: Record<DayKey, string> = {
-  mon: "Mon",
-  tue: "Tue",
-  wed: "Wed",
-  thu: "Thu",
-  fri: "Fri",
-  sat: "Sat",
-  sun: "Sun",
+  mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun",
 };
+
+function toLocalISODate(dt: Date): string {
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth() + 1).padStart(2, "0");
+  const d = String(dt.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
 
 function getMondayOfWeek(date: Date): string {
   const d = new Date(date);
   const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
-  return d.toISOString().split("T")[0];
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return toLocalISODate(d);
 }
 
 function addWeeks(weekOf: string, n: number): string {
   const [y, m, d] = weekOf.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
   dt.setDate(dt.getDate() + n * 7);
-  return dt.toISOString().split("T")[0];
+  return toLocalISODate(dt);
 }
 
 function formatWeekLabel(weekOf: string): string {
@@ -56,24 +57,18 @@ function parseCell(raw: string): string | null {
   return String(Math.round(num * 100) / 100);
 }
 
-function displayCell(val: string | null): string {
+function displayCell(val: string | null | undefined): string {
   if (val === null || val === undefined) return "";
   const n = parseFloat(val);
   return isNaN(n) ? val : String(n);
 }
 
-function CellInput({
-  value,
-  onSave,
-}: {
-  value: string | null;
-  onSave: (v: string | null) => void;
-}) {
-  const [local, setLocal] = useState(displayCell(value));
+function getDayValue(row: Record<string, unknown>, day: DayKey): string | null {
+  return (row[day] as string | null) ?? null;
+}
 
-  useEffect(() => {
-    setLocal(displayCell(value));
-  }, [value]);
+function CellInput({ value, onSave }: { value: string | null; onSave: (v: string | null) => void }) {
+  const [local, setLocal] = useState(displayCell(value));
 
   return (
     <input
@@ -82,28 +77,19 @@ function CellInput({
       value={local}
       onChange={(e) => setLocal(e.target.value)}
       onBlur={() => onSave(parseCell(local))}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+      onFocus={(e) => {
+        setLocal(displayCell(value));
+        e.target.select();
       }}
-      onFocus={(e) => e.target.select()}
       className="w-full h-8 text-center text-sm bg-transparent outline-none focus:bg-primary/5 rounded px-1 tabular-nums placeholder:text-muted-foreground/30 transition-colors"
       placeholder="—"
     />
   );
 }
 
-function LabelInput({
-  value,
-  onSave,
-}: {
-  value: string | null;
-  onSave: (v: string) => void;
-}) {
+function LabelInput({ value, onSave }: { value: string | null; onSave: (v: string) => void }) {
   const [local, setLocal] = useState(value ?? "");
-
-  useEffect(() => {
-    setLocal(value ?? "");
-  }, [value]);
 
   return (
     <input
@@ -111,36 +97,45 @@ function LabelInput({
       value={local}
       onChange={(e) => setLocal(e.target.value)}
       onBlur={() => onSave(local)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-      }}
+      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
       className="w-full h-8 text-sm bg-transparent outline-none focus:bg-primary/5 rounded px-2 placeholder:text-muted-foreground/40 transition-colors"
       placeholder="Row label…"
     />
   );
 }
 
-function getDayValue(row: GridRow, day: DayKey): string | null {
-  return (row as unknown as Record<string, string | null>)[day] ?? null;
-}
-
-export function GridBlock({ block }: { block: Block }) {
+function WeekGrid({
+  block,
+  weekOf,
+  isNavigable = false,
+  isPast = false,
+  onPrev,
+  onNext,
+  onToday,
+  showToday = false,
+}: {
+  block: Block;
+  weekOf: string;
+  isNavigable?: boolean;
+  isPast?: boolean;
+  onPrev?: () => void;
+  onNext?: () => void;
+  onToday?: () => void;
+  showToday?: boolean;
+}) {
   const queryClient = useQueryClient();
-  const [selectedWeek, setSelectedWeek] = useState(() => getMondayOfWeek(new Date()));
-  const currentWeek = getMondayOfWeek(new Date());
-
-  const { data: rows = [], isLoading } = useListGridRows(block.id, selectedWeek);
+  const { data: rows = [], isLoading } = useListGridRows(block.id, weekOf);
   const createGridRow = useCreateGridRow();
   const updateGridRow = useUpdateGridRow();
   const deleteGridRow = useDeleteGridRow();
 
   const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: getListGridRowsQueryKey(block.id, selectedWeek) });
-  }, [queryClient, block.id, selectedWeek]);
+    queryClient.invalidateQueries({ queryKey: getListGridRowsQueryKey(block.id, weekOf) });
+  }, [queryClient, block.id, weekOf]);
 
   const addRow = () => {
     createGridRow.mutate(
-      { blockId: block.id, data: { weekOf: selectedWeek } },
+      { blockId: block.id, data: { weekOf } },
       { onSuccess: invalidate }
     );
   };
@@ -160,118 +155,113 @@ export function GridBlock({ block }: { block: Block }) {
     deleteGridRow.mutate({ id: rowId }, { onSuccess: invalidate });
   };
 
-  const isCurrentWeek = selectedWeek === currentWeek;
-
-  if (isLoading) {
-    return (
-      <div className="h-12 flex items-center justify-center text-muted-foreground text-sm">
-        Loading…
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-3">
-      {/* Week navigation header */}
+    <div className={cn("space-y-2", isPast && "opacity-80")}>
+      {/* Week header */}
       <div className="flex items-center justify-between gap-2">
-        <button
-          onClick={() => setSelectedWeek((w) => addWeeks(w, -1))}
-          className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-          title="Previous week"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-
-        <div className="flex items-center gap-1.5 text-sm font-medium">
-          <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
-          <span>{formatWeekLabel(selectedWeek)}</span>
-        </div>
-
-        <div className="flex items-center gap-1">
-          {!isCurrentWeek && (
+        {isNavigable ? (
+          <>
             <button
-              onClick={() => setSelectedWeek(currentWeek)}
-              className="text-xs text-primary hover:underline px-1"
+              onClick={onPrev}
+              className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              title="Previous week"
             >
-              Today
+              <ChevronLeft className="w-4 h-4" />
             </button>
-          )}
-          <button
-            onClick={() => setSelectedWeek((w) => addWeeks(w, 1))}
-            className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-            title="Next week"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
+            <div className="flex items-center gap-1.5 text-sm font-medium">
+              <CalendarDays className="w-3.5 h-3.5 text-muted-foreground" />
+              <span>{formatWeekLabel(weekOf)}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              {showToday && (
+                <button
+                  onClick={onToday}
+                  className="text-xs text-primary hover:underline px-1"
+                >
+                  Today
+                </button>
+              )}
+              <button
+                onClick={onNext}
+                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                title="Next week"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <CalendarDays className="w-3 h-3" />
+            <span>{formatWeekLabel(weekOf)}</span>
+          </div>
+        )}
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-border">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-muted/40">
-              <th className="text-left text-xs font-medium text-muted-foreground px-3 py-2 w-36 border-r border-border">
-                Row
-              </th>
-              {DAYS.map((day) => (
-                <th
-                  key={day}
-                  className="text-center text-xs font-medium text-muted-foreground px-2 py-2 border-r border-border last:border-r-0 w-[62px]"
-                >
-                  {DAY_LABELS[day]}
+      {isLoading ? (
+        <div className="h-10 flex items-center justify-center text-muted-foreground text-sm">Loading…</div>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-border">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className={cn("bg-muted/40", isPast && "bg-muted/20")}>
+                <th className="text-left text-xs font-medium text-muted-foreground px-3 py-2 w-36 border-r border-border">
+                  Row
                 </th>
-              ))}
-              <th className="w-8" />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={9}
-                  className="text-center text-sm text-muted-foreground py-8 italic"
-                >
-                  No rows for this week — add one below.
-                </td>
+                {DAYS.map((day) => (
+                  <th
+                    key={day}
+                    className="text-center text-xs font-medium text-muted-foreground px-2 py-2 border-r border-border last:border-r-0 w-[62px]"
+                  >
+                    {DAY_LABELS[day]}
+                  </th>
+                ))}
+                <th className="w-8" />
               </tr>
-            ) : (
-              rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className={cn(
-                    "group border-t border-border transition-colors",
-                    "hover:bg-muted/20"
-                  )}
-                >
-                  <td className="border-r border-border px-1">
-                    <LabelInput
-                      value={row.label}
-                      onSave={(label) => updateLabel(row.id, label)}
-                    />
-                  </td>
-                  {DAYS.map((day) => (
-                    <td key={day} className="border-r border-border last:border-r-0 px-0.5">
-                      <CellInput
-                        value={getDayValue(row, day)}
-                        onSave={(v) => updateCell(row.id, day, v)}
-                      />
-                    </td>
-                  ))}
-                  <td className="px-1 text-center w-8">
-                    <button
-                      onClick={() => deleteRow(row.id)}
-                      className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all rounded"
-                      title="Delete row"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="text-center text-sm text-muted-foreground py-6 italic">
+                    No rows for this week.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                rows.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="group border-t border-border hover:bg-muted/20 transition-colors"
+                  >
+                    <td className="border-r border-border px-1">
+                      <LabelInput
+                        value={row.label}
+                        onSave={(label) => updateLabel(row.id, label)}
+                      />
+                    </td>
+                    {DAYS.map((day) => (
+                      <td key={day} className="border-r border-border last:border-r-0 px-0.5">
+                        <CellInput
+                          value={getDayValue(row as unknown as Record<string, unknown>, day)}
+                          onSave={(v) => updateCell(row.id, day, v)}
+                        />
+                      </td>
+                    ))}
+                    <td className="px-1 text-center w-8">
+                      <button
+                        onClick={() => deleteRow(row.id)}
+                        className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all rounded"
+                        title="Delete row"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <button
         onClick={addRow}
@@ -281,6 +271,41 @@ export function GridBlock({ block }: { block: Block }) {
         <Plus className="w-3.5 h-3.5" />
         Add row
       </button>
+    </div>
+  );
+}
+
+export function GridBlock({ block }: { block: Block }) {
+  const [selectedWeek, setSelectedWeek] = useState(() => getMondayOfWeek(new Date()));
+  const currentWeek = getMondayOfWeek(new Date());
+
+  const prevWeek = addWeeks(selectedWeek, -1);
+  const prevPrevWeek = addWeeks(selectedWeek, -2);
+  const isCurrentWeek = selectedWeek === currentWeek;
+
+  return (
+    <div className="space-y-5">
+      {/* Two weeks ago */}
+      <WeekGrid block={block} weekOf={prevPrevWeek} isPast />
+
+      {/* Subtle divider */}
+      <div className="border-t border-border/50" />
+
+      {/* Previous week */}
+      <WeekGrid block={block} weekOf={prevWeek} isPast />
+
+      <div className="border-t border-border/50" />
+
+      {/* Current / selected week — navigable */}
+      <WeekGrid
+        block={block}
+        weekOf={selectedWeek}
+        isNavigable
+        showToday={!isCurrentWeek}
+        onPrev={() => setSelectedWeek((w) => addWeeks(w, -1))}
+        onNext={() => setSelectedWeek((w) => addWeeks(w, 1))}
+        onToday={() => setSelectedWeek(currentWeek)}
+      />
     </div>
   );
 }
