@@ -1,26 +1,32 @@
 import {
   useListPhotos,
+  useUpdatePhoto,
+  useDeletePhoto,
   getListPhotosQueryKey,
 } from "@workspace/api-client-react";
 import type { Block, Photo } from "@workspace/api-client-react";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
   Dimensions,
   Image,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 
@@ -64,6 +70,211 @@ function PhotoThumb({ photo, onPress }: { photo: Photo; onPress: () => void }) {
   );
 }
 
+type ExtPhoto = Photo & { notes?: string | null; displayDate?: string | null; photoCategory?: string | null };
+
+function PhotoLightbox({
+  photo,
+  onClose,
+  onDeleted,
+  onUpdated,
+}: {
+  photo: ExtPhoto;
+  onClose: () => void;
+  onDeleted: () => void;
+  onUpdated: () => void;
+}) {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const updatePhoto = useUpdatePhoto();
+  const deletePhoto = useDeletePhoto();
+
+  const [caption, setCaption] = useState(photo.caption ?? "");
+  const [notes, setNotes] = useState(photo.notes ?? "");
+  const [displayDate, setDisplayDate] = useState(
+    photo.displayDate ?? photo.createdAt.slice(0, 10)
+  );
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    setCaption(photo.caption ?? "");
+    setNotes(photo.notes ?? "");
+    setDisplayDate(photo.displayDate ?? photo.createdAt.slice(0, 10));
+    setConfirmDelete(false);
+  }, [photo.id]);
+
+  function saveField(field: string, value: string) {
+    setSaving(true);
+    updatePhoto.mutate(
+      { id: photo.id, data: { [field]: value.trim() || null } as Record<string, string | null> },
+      {
+        onSuccess: () => { onUpdated(); setSaving(false); },
+        onError: () => setSaving(false),
+      }
+    );
+  }
+
+  function handleDelete() {
+    setDeleting(true);
+    deletePhoto.mutate(
+      { id: photo.id },
+      {
+        onSuccess: () => {
+          if (Platform.OS !== "web") {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          }
+          onDeleted();
+        },
+        onError: () => {
+          setDeleting(false);
+          Alert.alert("Error", "Could not delete the photo. Please try again.");
+        },
+      }
+    );
+  }
+
+  const uri = photoUri(photo);
+
+  return (
+    <Modal
+      visible
+      transparent={false}
+      animationType="slide"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <View style={[styles.lbContainer, { backgroundColor: "#0a0a0a" }]}>
+        {/* Top bar */}
+        <View style={[styles.lbTopBar, { paddingTop: insets.top + 8 }]}>
+          <TouchableOpacity onPress={onClose} style={styles.lbIconBtn} hitSlop={8}>
+            <Feather name="x" size={22} color="rgba(255,255,255,0.8)" />
+          </TouchableOpacity>
+          {saving && (
+            <ActivityIndicator size="small" color="rgba(255,255,255,0.5)" />
+          )}
+          {confirmDelete ? (
+            <View style={styles.lbDeleteConfirm}>
+              <TouchableOpacity onPress={() => setConfirmDelete(false)} style={styles.lbCancelBtn}>
+                <Text style={styles.lbCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleDelete}
+                disabled={deleting}
+                style={styles.lbConfirmBtn}
+              >
+                {deleting
+                  ? <ActivityIndicator size="small" color="#f87171" />
+                  : <Text style={styles.lbConfirmText}>Delete</Text>}
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              onPress={() => setConfirmDelete(true)}
+              style={styles.lbIconBtn}
+              hitSlop={8}
+            >
+              <Feather name="trash-2" size={20} color="rgba(255,255,255,0.5)" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Image */}
+        <View style={styles.lbImageArea}>
+          {uri ? (
+            <Image
+              source={{ uri }}
+              style={styles.lbImage}
+              resizeMode="contain"
+            />
+          ) : (
+            <Feather name="image" size={48} color="rgba(255,255,255,0.2)" />
+          )}
+        </View>
+
+        {/* Metadata panel */}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.lbPanel}
+        >
+          <ScrollView
+            style={[styles.lbScroll, { backgroundColor: "#161616" }]}
+            contentContainerStyle={[
+              styles.lbScrollContent,
+              { paddingBottom: insets.bottom + 24 },
+            ]}
+            keyboardShouldPersistTaps="handled"
+          >
+            <LbField
+              label="Caption"
+              value={caption}
+              onChange={setCaption}
+              onBlur={() => saveField("caption", caption)}
+              placeholder="Add a caption…"
+            />
+            <LbField
+              label="Notes"
+              value={notes}
+              onChange={setNotes}
+              onBlur={() => saveField("notes", notes)}
+              placeholder="Add notes…"
+              multiline
+            />
+            <LbField
+              label="Date"
+              value={displayDate}
+              onChange={setDisplayDate}
+              onBlur={() => saveField("displayDate", displayDate)}
+              placeholder="YYYY-MM-DD"
+              keyboardType="numbers-and-punctuation"
+            />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
+  );
+}
+
+function LbField({
+  label,
+  value,
+  onChange,
+  onBlur,
+  placeholder,
+  multiline,
+  keyboardType,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  onBlur: () => void;
+  placeholder?: string;
+  multiline?: boolean;
+  keyboardType?: "default" | "numbers-and-punctuation";
+}) {
+  return (
+    <View style={styles.lbFieldRow}>
+      <Text style={styles.lbFieldLabel}>{label.toUpperCase()}</Text>
+      <TextInput
+        style={[
+          styles.lbFieldInput,
+          multiline && styles.lbFieldInputMulti,
+        ]}
+        value={value}
+        onChangeText={onChange}
+        onBlur={onBlur}
+        placeholder={placeholder}
+        placeholderTextColor="rgba(255,255,255,0.2)"
+        multiline={multiline}
+        numberOfLines={multiline ? 3 : 1}
+        returnKeyType={multiline ? "default" : "done"}
+        onSubmitEditing={multiline ? undefined : onBlur}
+        keyboardType={keyboardType ?? "default"}
+      />
+    </View>
+  );
+}
+
 export function PhotoBlock({ block }: { block: Block }) {
   const colors = useColors();
   const queryClient = useQueryClient();
@@ -71,7 +282,10 @@ export function PhotoBlock({ block }: { block: Block }) {
     query: { enabled: !!block.id },
   });
   const [uploading, setUploading] = useState(false);
-  const [lightboxUri, setLightboxUri] = useState<string | null>(null);
+  const [lightboxPhoto, setLightboxPhoto] = useState<ExtPhoto | null>(null);
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey(block.id) });
 
   const uploadImage = async (uri: string) => {
     setUploading(true);
@@ -86,10 +300,7 @@ export function PhotoBlock({ block }: { block: Block }) {
       const domain = process.env.EXPO_PUBLIC_DOMAIN;
       const res = await fetch(
         `https://${domain}/api/blocks/${block.id}/photos/upload`,
-        {
-          method: "POST",
-          body: formData,
-        }
+        { method: "POST", body: formData }
       );
 
       if (!res.ok) throw new Error("Upload failed");
@@ -97,7 +308,7 @@ export function PhotoBlock({ block }: { block: Block }) {
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-      queryClient.invalidateQueries({ queryKey: getListPhotosQueryKey(block.id) });
+      invalidate();
     } catch {
       Alert.alert("Upload failed", "Could not upload the photo. Please try again.");
     } finally {
@@ -156,7 +367,7 @@ export function PhotoBlock({ block }: { block: Block }) {
             <PhotoThumb
               key={photo.id}
               photo={photo}
-              onPress={() => setLightboxUri(photoUri(photo) || null)}
+              onPress={() => setLightboxPhoto(photo as ExtPhoto)}
             />
           ))}
           {uploading && (
@@ -230,26 +441,17 @@ export function PhotoBlock({ block }: { block: Block }) {
         </Pressable>
       </View>
 
-      {/* Lightbox */}
-      <Modal
-        visible={!!lightboxUri}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setLightboxUri(null)}
-      >
-        <Pressable
-          style={styles.lightboxBackdrop}
-          onPress={() => setLightboxUri(null)}
-        >
-          {lightboxUri ? (
-            <Image
-              source={{ uri: lightboxUri }}
-              style={styles.lightboxImage}
-              resizeMode="contain"
-            />
-          ) : null}
-        </Pressable>
-      </Modal>
+      {lightboxPhoto && (
+        <PhotoLightbox
+          photo={lightboxPhoto}
+          onClose={() => setLightboxPhoto(null)}
+          onDeleted={() => {
+            setLightboxPhoto(null);
+            invalidate();
+          }}
+          onUpdated={invalidate}
+        />
+      )}
     </View>
   );
 }
@@ -257,35 +459,14 @@ export function PhotoBlock({ block }: { block: Block }) {
 const styles = StyleSheet.create({
   container: { gap: 12 },
   loading: { paddingVertical: 8, alignItems: "center" },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 4,
-  },
-  thumb: {
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  thumbImage: {
-    width: "100%",
-    height: "100%",
-  },
-  uploadingThumb: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  uploading: {
-    padding: 16,
-    alignItems: "center",
-    gap: 8,
-  },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
+  thumb: { alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  thumbImage: { width: "100%", height: "100%" },
+  uploadingThumb: { alignItems: "center", justifyContent: "center" },
+  uploading: { padding: 16, alignItems: "center", gap: 8 },
   uploadingText: { fontSize: 13 },
   emptyText: { fontSize: 14, fontStyle: "italic" },
-  actions: {
-    flexDirection: "row",
-    gap: 8,
-  },
+  actions: { flexDirection: "row", gap: 8 },
   actionBtn: {
     flex: 1,
     flexDirection: "row",
@@ -296,14 +477,51 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   actionText: { fontSize: 13 },
-  lightboxBackdrop: {
+
+  lbContainer: { flex: 1 },
+  lbTopBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  lbIconBtn: { padding: 6 },
+  lbDeleteConfirm: { flexDirection: "row", alignItems: "center", gap: 12 },
+  lbCancelBtn: { padding: 6 },
+  lbCancelText: { color: "rgba(255,255,255,0.4)", fontSize: 14 },
+  lbConfirmBtn: { padding: 6 },
+  lbConfirmText: { color: "#f87171", fontSize: 14, fontWeight: "600" },
+  lbImageArea: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.9)",
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 0,
   },
-  lightboxImage: {
-    width: "100%",
-    height: "80%",
+  lbImage: { width: "100%", height: "100%" },
+  lbPanel: { flexShrink: 0, maxHeight: "42%" },
+  lbScroll: { flexGrow: 0 },
+  lbScrollContent: { paddingHorizontal: 16, paddingTop: 16, gap: 14 },
+  lbFieldRow: { gap: 4 },
+  lbFieldLabel: {
+    color: "rgba(255,255,255,0.3)",
+    fontSize: 10,
+    letterSpacing: 1.2,
+    fontWeight: "600",
+  },
+  lbFieldInput: {
+    color: "#fff",
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "rgba(255,255,255,0.05)",
+  },
+  lbFieldInputMulti: {
+    minHeight: 72,
+    textAlignVertical: "top",
+    paddingTop: 8,
   },
 });
