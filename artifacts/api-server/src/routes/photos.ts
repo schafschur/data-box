@@ -161,6 +161,20 @@ router.post("/photos/:id/rotate", async (req: Request, res: Response) => {
 
 router.delete("/photos/:id", async (req: Request, res: Response) => {
   const { id } = DeletePhotoParams.parse(req.params);
+
+  const [photo] = await db.select().from(photosTable).where(eq(photosTable.id, id));
+
+  if (photo?.objectPath) {
+    try {
+      const file = await objectStorageService.getObjectEntityFile(photo.objectPath);
+      await file.delete();
+    } catch (err) {
+      if (!(err instanceof ObjectNotFoundError)) {
+        console.error("Failed to delete photo file from storage:", err);
+      }
+    }
+  }
+
   await db.delete(photosTable).where(eq(photosTable.id, id));
   res.status(204).end();
 });
