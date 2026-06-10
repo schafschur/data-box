@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, type ComponentType } from "react";
 import { Block, useDeleteBlock, useUpdateBlock, getListBlocksQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { Trash2, FileText, CheckSquare, Calendar, Image as ImageIcon, Check, Flame, BookOpen, Users, List, Download } from "lucide-react";
+import { Trash2, FileText, CheckSquare, Calendar, Image as ImageIcon, Check, Flame, BookOpen, Users, List, Grid, Download } from "lucide-react";
 import { RichTextBlock } from "./RichTextBlock";
 import { TodoBlock } from "./TodoBlock";
 import { CalendarBlock } from "./CalendarBlock";
@@ -9,6 +9,7 @@ import { PhotoBlock } from "./PhotoBlock";
 import { PdfBlock } from "./PdfBlock";
 import { ContactBlock } from "./ContactBlock";
 import { ListBlock } from "./ListBlock";
+import { GridBlock } from "./GridBlock";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,7 @@ const ICONS: Record<string, ComponentType<{ className?: string }>> = {
   pdf: BookOpen,
   contact: Users,
   list: List,
+  grid: Grid,
 };
 
 function importanceBadgeClass(imp: number): string {
@@ -237,6 +239,7 @@ export function BlockRenderer({ block }: BlockRendererProps) {
           {block.type === "pdf" && <PdfBlock block={block} />}
           {block.type === "contact" && <ContactBlock block={block} />}
           {block.type === "list" && <ListBlock block={block} />}
+          {block.type === "grid" && <GridBlock block={block} />}
         </div>
       </div>
     </div>

@@ -27,6 +27,7 @@ export const SearchResultBlockType = {
   pdf: 'pdf',
   contact: 'contact',
   list: 'list',
+  grid: 'grid',
 } as const;
 
 export interface SearchResult {
@@ -100,6 +101,7 @@ export const BlockType = {
   pdf: 'pdf',
   contact: 'contact',
   list: 'list',
+  grid: 'grid',
 } as const;
 
 /**
@@ -140,6 +142,9 @@ export const BlockInputType = {
   calendar: 'calendar',
   photo: 'photo',
   pdf: 'pdf',
+  contact: 'contact',
+  list: 'list',
+  grid: 'grid',
 } as const;
 
 export interface BlockInput {
@@ -427,4 +432,35 @@ export type SearchParams = {
  */
 q: string;
 };
+
+export interface GridRow {
+  id: number;
+  blockId: number;
+  label: string | null;
+  position: number;
+  mon: string | null;
+  tue: string | null;
+  wed: string | null;
+  thu: string | null;
+  fri: string | null;
+  sat: string | null;
+  sun: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GridRowInput {
+  label?: string | null;
+}
+
+export interface GridRowUpdate {
+  label?: string | null;
+  mon?: string | null;
+  tue?: string | null;
+  wed?: string | null;
+  thu?: string | null;
+  fri?: string | null;
+  sat?: string | null;
+  sun?: string | null;
+}
 

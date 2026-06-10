@@ -7,3 +7,4 @@ export * from "./calendar_events";
 export * from "./photos";
 export * from "./contact_cards";
 export * from "./list_items";
+export * from "./grid_rows";

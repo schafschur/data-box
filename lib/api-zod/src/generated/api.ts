@@ -222,7 +222,7 @@ export const CreateBlockParams = zod.object({
 })
 
 export const CreateBlockBody = zod.object({
-  "type": zod.enum(['richtext', 'todo', 'calendar', 'photo', 'pdf', 'contact', 'list']),
+  "type": zod.enum(['richtext', 'todo', 'calendar', 'photo', 'pdf', 'contact', 'list', 'grid']),
   "title": zod.string().nullish(),
   "importance": zod.number().int().min(1).max(10).nullish()
 })
@@ -749,5 +749,38 @@ export const UpdateLocationBody = zod.object({
  * @summary Delete a location
  */
 export const DeleteLocationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+const gridCellValue = zod.string().nullish();
+
+export const ListGridRowsParams = zod.object({
+  "blockId": zod.coerce.number()
+})
+
+export const CreateGridRowParams = zod.object({
+  "blockId": zod.coerce.number()
+})
+
+export const CreateGridRowBody = zod.object({
+  "label": zod.string().nullish()
+})
+
+export const UpdateGridRowParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateGridRowBody = zod.object({
+  "label": zod.string().nullish(),
+  "mon": gridCellValue,
+  "tue": gridCellValue,
+  "wed": gridCellValue,
+  "thu": gridCellValue,
+  "fri": gridCellValue,
+  "sat": gridCellValue,
+  "sun": gridCellValue,
+})
+
+export const DeleteGridRowParams = zod.object({
   "id": zod.coerce.number()
 })

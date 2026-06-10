@@ -2911,3 +2911,118 @@ export const useReorderListItems = <TError = ErrorType<unknown>, TContext = unkn
     mutationFn: ({ blockId, data }) => reorderListItems(blockId, data),
     ...options?.mutation,
   });
+
+export const getListGridRowsUrl = (blockId: number) =>
+  `/api/blocks/${blockId}/grid-rows`;
+
+export const getListGridRowsQueryKey = (blockId: number) =>
+  [getListGridRowsUrl(blockId)] as const;
+
+export const listGridRows = async (
+  blockId: number,
+  options?: SecondParameter<typeof customFetch>
+): Promise<GridRow[]> =>
+  customFetch<GridRow[]>(getListGridRowsUrl(blockId), options);
+
+export const getListGridRowsQueryOptions = <TData = GridRow[], TError = ErrorType<unknown>>(
+  blockId: number,
+  options?: {
+    query?: UseQueryOptions<GridRow[], TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  }
+) => {
+  const { query: queryOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getListGridRowsQueryKey(blockId);
+  return {
+    queryKey,
+    queryFn: () => listGridRows(blockId),
+    enabled: !!blockId,
+    ...queryOptions,
+  } as UseQueryOptions<GridRow[], TError, TData> & { queryKey: QueryKey };
+};
+
+export function useListGridRows<TData = GridRow[], TError = ErrorType<unknown>>(
+  blockId: number,
+  options?: {
+    query?: UseQueryOptions<GridRow[], TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListGridRowsQueryOptions<TData, TError>(blockId, options);
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const createGridRow = async (
+  blockId: number,
+  data: BodyType<GridRowInput>,
+  options?: SecondParameter<typeof customFetch>
+): Promise<GridRow> =>
+  customFetch<GridRow>(getListGridRowsUrl(blockId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(options as RequestInit | undefined)?.headers },
+    body: JSON.stringify(data),
+  });
+
+export const useCreateGridRow = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      GridRow,
+      TError,
+      { blockId: number; data: BodyType<GridRowInput> },
+      TContext
+    >;
+  }
+): UseMutationResult<GridRow, TError, { blockId: number; data: BodyType<GridRowInput> }, TContext> =>
+  useMutation({
+    mutationFn: ({ blockId, data }) => createGridRow(blockId, data),
+    ...options?.mutation,
+  });
+
+export const getUpdateGridRowUrl = (id: number) => `/api/grid-rows/${id}`;
+
+export const updateGridRow = async (
+  id: number,
+  data: BodyType<GridRowUpdate>,
+  options?: SecondParameter<typeof customFetch>
+): Promise<GridRow> =>
+  customFetch<GridRow>(getUpdateGridRowUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...(options as RequestInit | undefined)?.headers },
+    body: JSON.stringify(data),
+  });
+
+export const useUpdateGridRow = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      GridRow,
+      TError,
+      { id: number; data: BodyType<GridRowUpdate> },
+      TContext
+    >;
+  }
+): UseMutationResult<GridRow, TError, { id: number; data: BodyType<GridRowUpdate> }, TContext> =>
+  useMutation({
+    mutationFn: ({ id, data }) => updateGridRow(id, data),
+    ...options?.mutation,
+  });
+
+export const getDeleteGridRowUrl = (id: number) => `/api/grid-rows/${id}`;
+
+export const deleteGridRow = async (
+  id: number,
+  options?: SecondParameter<typeof customFetch>
+): Promise<void> =>
+  customFetch<void>(getDeleteGridRowUrl(id), { method: "DELETE", ...options } as Parameters<typeof customFetch>[1]);
+
+export const useDeleteGridRow = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<void, TError, { id: number }, TContext>;
+  }
+): UseMutationResult<void, TError, { id: number }, TContext> =>
+  useMutation({
+    mutationFn: ({ id }) => deleteGridRow(id),
+    ...options?.mutation,
+  });

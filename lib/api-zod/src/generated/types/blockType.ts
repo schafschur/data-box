@@ -17,4 +17,5 @@ export const BlockType = {
   pdf: 'pdf',
   contact: 'contact',
   list: 'list',
+  grid: 'grid',
 } as const;

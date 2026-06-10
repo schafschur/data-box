@@ -27,7 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const schema = z.object({
   title: z.string().optional(),
-  type: z.enum(["richtext", "todo", "calendar", "photo", "pdf", "contact", "list"]),
+  type: z.enum(["richtext", "todo", "calendar", "photo", "pdf", "contact", "list", "grid"]),
 }).superRefine((data, ctx) => {
   if (data.type === "photo" && !data.title?.trim()) {
     ctx.addIssue({
@@ -56,6 +56,7 @@ export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
   const isPdf = selectedType === "pdf";
   const isContact = selectedType === "contact";
   const isList = selectedType === "list";
+  const isGrid = selectedType === "grid";
 
   const onSubmit = (data: z.infer<typeof schema>) => {
     createBlock.mutate(
@@ -90,6 +91,8 @@ export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
               ? "Store and manage contact cards with photos, email, and phone."
               : isList
               ? "A structured list of items, each with a title, description, and notes."
+              : isGrid
+              ? "A 7-column weekly data grid. Add rows, label them, and fill in numeric values per day."
               : "Add a new section to your instance."}
           </DialogDescription>
         </DialogHeader>
@@ -122,6 +125,7 @@ export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
                       <SelectItem value="pdf">PDF Files</SelectItem>
                       <SelectItem value="contact">Contacts</SelectItem>
                       <SelectItem value="list">List</SelectItem>
+                      <SelectItem value="grid">Weekly Grid</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -149,7 +153,7 @@ export function CreateBlockDialog({ instanceId }: { instanceId: number }) {
             />
             <div className="flex justify-end pt-4">
               <Button type="submit" disabled={createBlock.isPending}>
-                {isPhoto ? "Create Photo Block" : isPdf ? "Create PDF Block" : isContact ? "Create Contacts Block" : "Create Block"}
+                {isPhoto ? "Create Photo Block" : isPdf ? "Create PDF Block" : isContact ? "Create Contacts Block" : isGrid ? "Create Grid Block" : "Create Block"}
               </Button>
             </div>
           </form>

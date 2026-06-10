@@ -11,6 +11,7 @@ import { PhotoBlock } from "./PhotoBlock";
 import { PdfBlock } from "./PdfBlock";
 import { ListBlock } from "./ListBlock";
 import { ContactBlock } from "./ContactBlock";
+import { GridBlock } from "./GridBlock";
 
 const BLOCK_TYPE_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   richtext: "file-text",
@@ -20,6 +21,7 @@ const BLOCK_TYPE_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   pdf: "book-open",
   list: "list",
   contact: "users",
+  grid: "grid",
 };
 
 function importanceBadgeColor(imp: number): { bg: string; text: string } {
@@ -86,6 +88,7 @@ export function BlockRenderer({
         {block.type === "pdf" && <PdfBlock block={block} />}
         {block.type === "list" && <ListBlock block={block} onScrollRequest={onScrollRequest} />}
         {block.type === "contact" && <ContactBlock block={block} />}
+        {block.type === "grid" && <GridBlock block={block} />}
       </View>
     </View>
   );
