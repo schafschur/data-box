@@ -28,13 +28,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useColors } from "@/hooks/useColors";
 import { BlockRenderer } from "@/components/blocks/BlockRenderer";
 
-type BlockType = "richtext" | "todo" | "calendar" | "photo";
+type BlockType = "richtext" | "todo" | "calendar" | "photo" | "list";
 
 const BLOCK_TYPES: { type: BlockType; icon: string; label: string; description: string }[] = [
   { type: "richtext", icon: "file-text", label: "Note", description: "Rich text notes" },
   { type: "todo", icon: "check-square", label: "Checklist", description: "Tasks & to-dos" },
   { type: "calendar", icon: "calendar", label: "Calendar", description: "Events & dates" },
   { type: "photo", icon: "image", label: "Photos", description: "Photo gallery" },
+  { type: "list", icon: "list", label: "List", description: "Structured list items" },
 ];
 
 function NewBlockModal({
