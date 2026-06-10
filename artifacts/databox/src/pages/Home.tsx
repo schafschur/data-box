@@ -61,8 +61,8 @@ function UpcomingEventCard({ event }: { event: UpcomingEvent }) {
               right: 0,
               width: 0,
               height: 0,
-              borderLeft: "32px solid transparent",
-              borderBottom: `32px solid ${event.locationColor}`,
+              borderLeft: "24px solid transparent",
+              borderBottom: `24px solid ${event.locationColor}`,
             }}
           />
         )}
