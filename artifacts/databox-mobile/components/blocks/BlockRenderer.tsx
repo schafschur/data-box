@@ -78,7 +78,7 @@ export function BlockRenderer({
 
       <View style={styles.content}>
         {block.type === "richtext" && <RichTextBlock block={block} />}
-        {block.type === "todo" && <TodoBlock block={block} />}
+        {block.type === "todo" && <TodoBlock block={block} onScrollRequest={onScrollRequest} />}
         {block.type === "calendar" && (
           <CalendarBlock block={block} highlightEventId={highlightEventId} onScrollRequest={onScrollRequest} />
         )}
