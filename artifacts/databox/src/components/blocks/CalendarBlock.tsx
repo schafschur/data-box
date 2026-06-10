@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Block,
   CalendarEvent,
@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Trash2, Plus, Pencil, Check, X, Flame, Clock, CalendarRange, GripVertical,
+  Trash2, Plus, Pencil, Check, X, Flame, Clock, CalendarRange, GripVertical, MapPin,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -32,6 +32,12 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+
+interface Location {
+  id: number;
+  name: string;
+  color: string;
+}
 
 function formatTime(time: string): string {
   const [h, m] = time.split(":").map(Number);
@@ -63,10 +69,21 @@ interface EditState {
   startTime: string;
   endTime: string;
   description: string;
+  locationId: number | null;
+}
+
+function LocationBadge({ name, color }: { name: string; color: string }) {
+  return (
+    <div className="flex items-center gap-1 mt-1">
+      <MapPin className="w-3 h-3 shrink-0" style={{ color }} />
+      <span className="text-xs font-medium" style={{ color }}>{name}</span>
+    </div>
+  );
 }
 
 function EventRow({
   event,
+  locations,
   onDelete,
   onSave,
   onTogglePriority,
@@ -74,19 +91,21 @@ function EventRow({
   isSaving,
 }: {
   event: CalendarEvent;
+  locations: Location[];
   onDelete: () => void;
   onSave: (data: EditState) => void;
   onTogglePriority: () => void;
   isDeleting: boolean;
   isSaving: boolean;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [editTitle, setEditTitle]           = useState(event.title);
-  const [editDate, setEditDate]             = useState(event.date as unknown as string);
-  const [editEndDate, setEditEndDate]       = useState((event.endDate as unknown as string) ?? "");
-  const [editStartTime, setEditStartTime]   = useState(event.startTime ?? "");
-  const [editEndTime, setEditEndTime]       = useState(event.endTime ?? "");
-  const [editDescription, setEditDescription] = useState(event.description ?? "");
+  const [editing, setEditing]                   = useState(false);
+  const [editTitle, setEditTitle]               = useState(event.title);
+  const [editDate, setEditDate]                 = useState(event.date as unknown as string);
+  const [editEndDate, setEditEndDate]           = useState((event.endDate as unknown as string) ?? "");
+  const [editStartTime, setEditStartTime]       = useState(event.startTime ?? "");
+  const [editEndTime, setEditEndTime]           = useState(event.endTime ?? "");
+  const [editDescription, setEditDescription]   = useState(event.description ?? "");
+  const [editLocationId, setEditLocationId]     = useState<number | null>(event.locationId ?? null);
 
   const eventDate    = parseISO(event.date as unknown as string);
   const isEventToday = isToday(eventDate);
@@ -102,6 +121,7 @@ function EventRow({
     setEditStartTime(event.startTime ?? "");
     setEditEndTime(event.endTime ?? "");
     setEditDescription(event.description ?? "");
+    setEditLocationId(event.locationId ?? null);
     setEditing(true);
   };
 
@@ -116,6 +136,7 @@ function EventRow({
       startTime:   editStartTime,
       endTime:     editEndTime,
       description: editDescription.trim(),
+      locationId:  editLocationId,
     });
     setEditing(false);
   };
@@ -156,6 +177,21 @@ function EventRow({
             <label className="text-[10px] text-muted-foreground uppercase tracking-wider pl-0.5">To <span className="normal-case">(optional)</span></label>
             <Input type="time" value={editEndTime} onChange={(e) => setEditEndTime(e.target.value)} className="w-[120px] h-8 text-sm" />
           </div>
+          {locations.length > 0 && (
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[10px] text-muted-foreground uppercase tracking-wider pl-0.5">Location <span className="normal-case">(optional)</span></label>
+              <select
+                value={editLocationId ?? ""}
+                onChange={(e) => setEditLocationId(e.target.value ? Number(e.target.value) : null)}
+                className="h-8 text-sm rounded-md border border-input bg-background px-2 text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                <option value="">None</option>
+                {locations.map((loc) => (
+                  <option key={loc.id} value={loc.id}>{loc.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
         <Textarea
           value={editDescription}
@@ -174,6 +210,9 @@ function EventRow({
       </div>
     );
   }
+
+  const locationColor = (event.locationColor as string | undefined) ?? null;
+  const locationName  = (event.locationName  as string | undefined) ?? null;
 
   return (
     <div
@@ -245,6 +284,9 @@ function EventRow({
             {event.description}
           </div>
         )}
+        {locationName && (
+          <LocationBadge name={locationName} color={locationColor || "#6b7280"} />
+        )}
       </div>
 
       {/* Actions */}
@@ -282,6 +324,7 @@ function EventRow({
 
 function SortableEventRow(props: {
   event: CalendarEvent;
+  locations: Location[];
   onDelete: () => void;
   onSave: (data: EditState) => void;
   onTogglePriority: () => void;
@@ -322,12 +365,22 @@ function SortableEventRow(props: {
   );
 }
 
+const LOCATION_COLORS = [
+  "#3b82f6", "#ef4444", "#22c55e", "#f59e0b", "#8b5cf6",
+  "#ec4899", "#14b8a6", "#f97316", "#06b6d4", "#a855f7",
+];
+function randomColor() {
+  return LOCATION_COLORS[Math.floor(Math.random() * LOCATION_COLORS.length)];
+}
+
 export function CalendarBlock({ block }: { block: Block }) {
-  const [newTitle, setNewTitle]         = useState("");
-  const [newDate, setNewDate]           = useState("");
-  const [newEndDate, setNewEndDate]     = useState("");
-  const [newStartTime, setNewStartTime] = useState("");
-  const [newEndTime, setNewEndTime]     = useState("");
+  const [newTitle, setNewTitle]           = useState("");
+  const [newDate, setNewDate]             = useState("");
+  const [newEndDate, setNewEndDate]       = useState("");
+  const [newStartTime, setNewStartTime]   = useState("");
+  const [newEndTime, setNewEndTime]       = useState("");
+  const [newLocationId, setNewLocationId] = useState<number | null>(null);
+  const [locations, setLocations]         = useState<Location[]>([]);
   const queryClient = useQueryClient();
 
   const { data: events = [] } = useListCalendarEvents(block.id, {
@@ -342,6 +395,13 @@ export function CalendarBlock({ block }: { block: Block }) {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
+  useEffect(() => {
+    fetch("/api/locations")
+      .then((r) => r.json())
+      .then((data: Location[]) => setLocations(data))
+      .catch(() => {});
+  }, []);
+
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: getListCalendarEventsQueryKey(block.id) });
 
@@ -352,11 +412,12 @@ export function CalendarBlock({ block }: { block: Block }) {
       {
         blockId: block.id,
         data: {
-          title:     newTitle.trim(),
-          date:      newDate,
-          endDate:   newEndDate   || null,
-          startTime: newStartTime || null,
-          endTime:   newEndTime   || null,
+          title:      newTitle.trim(),
+          date:       newDate,
+          endDate:    newEndDate   || null,
+          startTime:  newStartTime || null,
+          endTime:    newEndTime   || null,
+          locationId: newLocationId,
         },
       },
       {
@@ -367,6 +428,7 @@ export function CalendarBlock({ block }: { block: Block }) {
           setNewEndDate("");
           setNewStartTime("");
           setNewEndTime("");
+          setNewLocationId(null);
         },
       },
     );
@@ -383,6 +445,7 @@ export function CalendarBlock({ block }: { block: Block }) {
           startTime:   data.startTime || null,
           endTime:     data.endTime   || null,
           description: data.description || null,
+          locationId:  data.locationId,
         },
       },
       { onSuccess: invalidate },
@@ -401,6 +464,7 @@ export function CalendarBlock({ block }: { block: Block }) {
           endTime:      event.endTime     ?? null,
           description:  event.description ?? null,
           highPriority: !event.highPriority,
+          locationId:   (event.locationId as number | undefined) ?? null,
         },
       },
       { onSuccess: invalidate },
@@ -464,6 +528,7 @@ export function CalendarBlock({ block }: { block: Block }) {
                 <SortableEventRow
                   key={event.id}
                   event={event}
+                  locations={locations}
                   onDelete={() => handleDelete(event.id)}
                   onSave={(data) => handleSave(event.id, data)}
                   onTogglePriority={() => handleTogglePriority(event)}
@@ -501,6 +566,21 @@ export function CalendarBlock({ block }: { block: Block }) {
             <label className="text-[10px] text-muted-foreground uppercase tracking-wider pl-0.5">To <span className="normal-case opacity-70">(opt)</span></label>
             <Input type="time" value={newEndTime} onChange={(e) => setNewEndTime(e.target.value)} className="w-[120px] h-9 text-sm" />
           </div>
+          {locations.length > 0 && (
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[10px] text-muted-foreground uppercase tracking-wider pl-0.5">Location <span className="normal-case opacity-70">(opt)</span></label>
+              <select
+                value={newLocationId ?? ""}
+                onChange={(e) => setNewLocationId(e.target.value ? Number(e.target.value) : null)}
+                className="h-9 text-sm rounded-md border border-input bg-background px-2 text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                <option value="">None</option>
+                {locations.map((loc) => (
+                  <option key={loc.id} value={loc.id}>{loc.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <Button
             type="submit"
             disabled={!newTitle.trim() || !newDate || createEvent.isPending}
@@ -511,6 +591,15 @@ export function CalendarBlock({ block }: { block: Block }) {
           </Button>
         </div>
       </form>
+
+      {/* Locations hint */}
+      {locations.length === 0 && (
+        <p className="text-xs text-muted-foreground/60 text-center">
+          Add locations in the <span className="font-medium">Calendar</span> page to tag events with a city.
+        </p>
+      )}
     </div>
   );
 }
+
+export { randomColor };

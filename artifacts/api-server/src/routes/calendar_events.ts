@@ -1,7 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { eq, asc } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { calendarEventsTable } from "@workspace/db";
+import { calendarEventsTable, locationsTable } from "@workspace/db";
 import {
   ListCalendarEventsParams,
   CreateCalendarEventParams,
@@ -16,8 +16,25 @@ const router: IRouter = Router();
 router.get("/blocks/:blockId/calendar-events", async (req: Request, res: Response) => {
   const { blockId } = ListCalendarEventsParams.parse(req.params);
   const rows = await db
-    .select()
+    .select({
+      id:            calendarEventsTable.id,
+      blockId:       calendarEventsTable.blockId,
+      locationId:    calendarEventsTable.locationId,
+      locationName:  locationsTable.name,
+      locationColor: locationsTable.color,
+      title:         calendarEventsTable.title,
+      date:          calendarEventsTable.date,
+      endDate:       calendarEventsTable.endDate,
+      startTime:     calendarEventsTable.startTime,
+      endTime:       calendarEventsTable.endTime,
+      description:   calendarEventsTable.description,
+      highPriority:  calendarEventsTable.highPriority,
+      sortOrder:     calendarEventsTable.sortOrder,
+      createdAt:     calendarEventsTable.createdAt,
+      updatedAt:     calendarEventsTable.updatedAt,
+    })
     .from(calendarEventsTable)
+    .leftJoin(locationsTable, eq(calendarEventsTable.locationId, locationsTable.id))
     .where(eq(calendarEventsTable.blockId, blockId))
     .orderBy(asc(calendarEventsTable.date));
   res.json(rows);
@@ -37,14 +54,36 @@ router.post("/blocks/:blockId/calendar-events", async (req: Request, res: Respon
     .insert(calendarEventsTable)
     .values({
       ...parsed.data,
-      date: dateStr,
+      date:       dateStr,
       blockId,
-      endDate:   parsed.data.endDate   ?? null,
-      startTime: parsed.data.startTime ?? null,
-      endTime:   parsed.data.endTime   ?? null,
+      endDate:    parsed.data.endDate    ?? null,
+      startTime:  parsed.data.startTime  ?? null,
+      endTime:    parsed.data.endTime    ?? null,
+      locationId: parsed.data.locationId ?? null,
     })
     .returning();
-  res.status(201).json(row);
+  const full = await db
+    .select({
+      id:            calendarEventsTable.id,
+      blockId:       calendarEventsTable.blockId,
+      locationId:    calendarEventsTable.locationId,
+      locationName:  locationsTable.name,
+      locationColor: locationsTable.color,
+      title:         calendarEventsTable.title,
+      date:          calendarEventsTable.date,
+      endDate:       calendarEventsTable.endDate,
+      startTime:     calendarEventsTable.startTime,
+      endTime:       calendarEventsTable.endTime,
+      description:   calendarEventsTable.description,
+      highPriority:  calendarEventsTable.highPriority,
+      sortOrder:     calendarEventsTable.sortOrder,
+      createdAt:     calendarEventsTable.createdAt,
+      updatedAt:     calendarEventsTable.updatedAt,
+    })
+    .from(calendarEventsTable)
+    .leftJoin(locationsTable, eq(calendarEventsTable.locationId, locationsTable.id))
+    .where(eq(calendarEventsTable.id, row.id));
+  res.status(201).json(full[0] ?? row);
 });
 
 router.put("/calendar-events/reorder", async (req: Request, res: Response) => {
@@ -74,25 +113,46 @@ router.put("/calendar-events/:id", async (req: Request, res: Response) => {
   const dateStr = parsed.data.date instanceof Date
     ? parsed.data.date.toISOString().split("T")[0]
     : parsed.data.date !== undefined ? String(parsed.data.date) : undefined;
-  const [row] = await db
+  await db
     .update(calendarEventsTable)
     .set({
       title:       parsed.data.title,
       date:        dateStr,
-      endDate:     parsed.data.endDate   !== undefined ? (parsed.data.endDate   ?? null) : undefined,
-      startTime:   parsed.data.startTime !== undefined ? (parsed.data.startTime ?? null) : undefined,
-      endTime:     parsed.data.endTime   !== undefined ? (parsed.data.endTime   ?? null) : undefined,
+      endDate:     parsed.data.endDate    !== undefined ? (parsed.data.endDate    ?? null) : undefined,
+      startTime:   parsed.data.startTime  !== undefined ? (parsed.data.startTime  ?? null) : undefined,
+      endTime:     parsed.data.endTime    !== undefined ? (parsed.data.endTime    ?? null) : undefined,
       description: parsed.data.description,
+      locationId:  parsed.data.locationId !== undefined ? (parsed.data.locationId ?? null) : undefined,
       ...(parsed.data.highPriority !== undefined ? { highPriority: parsed.data.highPriority } : {}),
       updatedAt:   new Date(),
     })
-    .where(eq(calendarEventsTable.id, id))
-    .returning();
-  if (!row) {
+    .where(eq(calendarEventsTable.id, id));
+  const full = await db
+    .select({
+      id:            calendarEventsTable.id,
+      blockId:       calendarEventsTable.blockId,
+      locationId:    calendarEventsTable.locationId,
+      locationName:  locationsTable.name,
+      locationColor: locationsTable.color,
+      title:         calendarEventsTable.title,
+      date:          calendarEventsTable.date,
+      endDate:       calendarEventsTable.endDate,
+      startTime:     calendarEventsTable.startTime,
+      endTime:       calendarEventsTable.endTime,
+      description:   calendarEventsTable.description,
+      highPriority:  calendarEventsTable.highPriority,
+      sortOrder:     calendarEventsTable.sortOrder,
+      createdAt:     calendarEventsTable.createdAt,
+      updatedAt:     calendarEventsTable.updatedAt,
+    })
+    .from(calendarEventsTable)
+    .leftJoin(locationsTable, eq(calendarEventsTable.locationId, locationsTable.id))
+    .where(eq(calendarEventsTable.id, id));
+  if (!full[0]) {
     res.status(404).json({ error: "Calendar event not found" });
     return;
   }
-  res.json(row);
+  res.json(full[0]);
 });
 
 router.delete("/calendar-events/:id", async (req: Request, res: Response) => {

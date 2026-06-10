@@ -6,8 +6,13 @@ import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, addDays,
 } from "date-fns";
-import { Flame, CalendarDays, ChevronRight, AlignLeft, LayoutGrid, Clock, CalendarRange, GripVertical } from "lucide-react";
+import {
+  Flame, CalendarDays, ChevronRight, AlignLeft, LayoutGrid,
+  Clock, CalendarRange, GripVertical, MapPin, X, Plus, Trash2, Settings,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
 } from "@dnd-kit/core";
@@ -17,6 +22,12 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+interface Location {
+  id: number;
+  name: string;
+  color: string;
+}
 
 interface CalendarEntry {
   id: number;
@@ -28,6 +39,9 @@ interface CalendarEntry {
   description: string | null;
   highPriority: boolean;
   sortOrder: number | null;
+  locationId: number | null;
+  locationName: string | null;
+  locationColor: string | null;
   blockId: number;
   instanceId: number;
   instanceName: string;
@@ -66,6 +80,15 @@ function fmtDateRange(date: string, endDate?: string | null): string {
   return format(start, "yyyy") === format(end, "yyyy")
     ? `${format(start, "EEE, MMM d")} – ${format(end, "EEE, MMM d, yyyy")}`
     : `${format(start, "EEE, MMM d, yyyy")} – ${format(end, "EEE, MMM d, yyyy")}`;
+}
+
+function LocationBadge({ name, color }: { name: string; color: string }) {
+  return (
+    <div className="flex items-center gap-1 mt-1">
+      <MapPin className="w-3 h-3 shrink-0" style={{ color }} />
+      <span className="text-xs font-medium" style={{ color }}>{name}</span>
+    </div>
+  );
 }
 
 /* ── Timeline event card ──────────────────────────────────────────── */
@@ -153,6 +176,11 @@ function TimelineEventCard({ event }: { event: CalendarEntry }) {
           <span className="truncate">{event.instanceName}</span>
         </div>
 
+        {/* Location badge */}
+        {event.locationName && (
+          <LocationBadge name={event.locationName} color={event.locationColor || "#6b7280"} />
+        )}
+
         {event.description && (
           <p className={cn("text-xs mt-1 line-clamp-2 leading-relaxed", isPriority ? "text-orange-700/60" : "text-muted-foreground")}>
             {event.description}
@@ -203,7 +231,7 @@ function GridEventItem({ event }: { event: CalendarEntry }) {
   return (
     <button
       onClick={(e) => { e.stopPropagation(); setLocation(`/instances/${event.instanceId}`); }}
-      title={`${event.title}${timeRange ? ` · ${timeRange}` : ""} · ${event.categoryName} › ${event.instanceName}`}
+      title={`${event.title}${timeRange ? ` · ${timeRange}` : ""}${event.locationName ? ` · 📍 ${event.locationName}` : ""} · ${event.categoryName} › ${event.instanceName}`}
       className={cn(
         "w-full text-left text-[11px] leading-tight px-1.5 py-1 rounded flex flex-col gap-0.5 transition-all",
         isPriority
@@ -223,6 +251,12 @@ function GridEventItem({ event }: { event: CalendarEntry }) {
         }
         <span className="truncate font-medium">{event.title}</span>
         {isMultiDay && <CalendarRange className="w-2.5 h-2.5 shrink-0 opacity-50" />}
+        {event.locationName && (
+          <span
+            className="w-2 h-2 rounded-full shrink-0"
+            style={{ backgroundColor: event.locationColor || "#6b7280" }}
+          />
+        )}
       </div>
       {timeRange && (
         <div className={cn("flex items-center gap-0.5 pl-3", isPriority ? "text-orange-600/70" : "text-muted-foreground")}>
@@ -303,7 +337,6 @@ function MonthGrid({ monthKey, events, isCurrentMonth, todayRef }: {
   const weeks: Date[] = [];
   for (let i = 0; i < allDays.length; i += 7) weeks.push(allDays[i]);
 
-  // Index events by date — multi-day events appear on every spanned day
   const eventsByDate = new Map<string, CalendarEntry[]>();
   for (const ev of events) {
     const start = parseISO(ev.date);
@@ -315,16 +348,12 @@ function MonthGrid({ monthKey, events, isCurrentMonth, todayRef }: {
       eventsByDate.get(key)!.push(ev);
     }
   }
-  // Sort each day's bucket:
-  //   middle days (multi-day event fully covers the day) → top ("0:")
-  //   start day / single-day events                      → mixed by start time ("1:")
-  //   end day                                            → mixed by end time ("1:") — interleaves with other events by clock
   const dayRole = (ev: CalendarEntry, dayKey: string): string => {
     const isMulti = ev.endDate && ev.endDate !== ev.date;
-    if (!isMulti) return "1:" + (ev.startTime ?? "");       // single-day: by start time
-    if (ev.date === dayKey)    return "1:" + (ev.startTime ?? ""); // start day: by start time
-    if (ev.endDate === dayKey) return "1:" + (ev.endTime  ?? "23:59"); // end day: mixed in by end time
-    return "0:";                                             // middle day: top
+    if (!isMulti) return "1:" + (ev.startTime ?? "");
+    if (ev.date === dayKey)    return "1:" + (ev.startTime ?? "");
+    if (ev.endDate === dayKey) return "1:" + (ev.endTime  ?? "23:59");
+    return "0:";
   };
   for (const [dayKey, bucket] of eventsByDate.entries()) {
     bucket.sort((a, b) => dayRole(a, dayKey).localeCompare(dayRole(b, dayKey)));
@@ -356,6 +385,153 @@ function MonthGrid({ monthKey, events, isCurrentMonth, todayRef }: {
   );
 }
 
+/* ── Locations manager panel ──────────────────────────────────────── */
+const PRESET_COLORS = [
+  "#3b82f6", "#ef4444", "#22c55e", "#f59e0b", "#8b5cf6",
+  "#ec4899", "#14b8a6", "#f97316", "#06b6d4", "#a855f7",
+];
+function randomColor() {
+  return PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
+}
+
+function LocationsPanel({
+  locations,
+  onClose,
+  onRefresh,
+}: {
+  locations: Location[];
+  onClose: () => void;
+  onRefresh: () => void;
+}) {
+  const [newName, setNewName]   = useState("");
+  const [newColor, setNewColor] = useState(() => randomColor());
+  const [saving, setSaving]     = useState(false);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim()) return;
+    setSaving(true);
+    try {
+      await fetch(`${BASE_URL}/api/locations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName.trim(), color: newColor }),
+      });
+      setNewName("");
+      setNewColor(randomColor());
+      onRefresh();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleColorChange = async (id: number, color: string) => {
+    await fetch(`${BASE_URL}/api/locations/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ color }),
+    });
+    onRefresh();
+  };
+
+  const handleDelete = async (id: number) => {
+    await fetch(`${BASE_URL}/api/locations/${id}`, { method: "DELETE" });
+    onRefresh();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      {/* Backdrop */}
+      <div className="flex-1 bg-black/20" onClick={onClose} />
+      {/* Panel */}
+      <div className="w-72 bg-background border-l border-border shadow-2xl flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b">
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-muted-foreground" />
+            <h2 className="font-semibold text-sm">Locations</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* List */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2">
+          {locations.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-4">
+              No locations yet. Add a city below.
+            </p>
+          ) : (
+            locations.map((loc) => (
+              <div key={loc.id} className="flex items-center gap-2.5 group py-1">
+                <div className="relative shrink-0">
+                  <div
+                    className="w-5 h-5 rounded-full border-2 border-white shadow-sm cursor-pointer"
+                    style={{ backgroundColor: loc.color }}
+                  />
+                  <input
+                    type="color"
+                    value={loc.color}
+                    onChange={(e) => handleColorChange(loc.id, e.target.value)}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full rounded-full"
+                    title="Change color"
+                  />
+                </div>
+                <span className="flex-1 text-sm font-medium truncate">{loc.name}</span>
+                <button
+                  onClick={() => handleDelete(loc.id)}
+                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all p-0.5 rounded"
+                  title="Remove location"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Add form */}
+        <div className="border-t px-5 py-4">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-3">Add location</p>
+          <form onSubmit={handleAdd} className="flex items-center gap-2">
+            <div className="relative shrink-0">
+              <div
+                className="w-7 h-7 rounded-md border border-border cursor-pointer shadow-sm"
+                style={{ backgroundColor: newColor }}
+              />
+              <input
+                type="color"
+                value={newColor}
+                onChange={(e) => setNewColor(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                title="Pick color"
+              />
+            </div>
+            <Input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="City name"
+              className="flex-1 h-8 text-sm"
+            />
+            <Button
+              type="submit"
+              size="sm"
+              disabled={!newName.trim() || saving}
+              className="h-8 px-2.5 shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </Button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main page ────────────────────────────────────────────────────── */
 export function CalendarPage() {
   const [events, setEvents]           = useState<CalendarEntry[]>([]);
@@ -364,6 +540,8 @@ export function CalendarPage() {
   const [displayMode, setDisplayMode] = useState<DisplayMode>(
     () => (sessionStorage.getItem("calendarDisplayMode") as DisplayMode | null) ?? "timeline"
   );
+  const [locations, setLocations]     = useState<Location[]>([]);
+  const [showLocMgr, setShowLocMgr]   = useState(false);
 
   const setDisplayModeAndPersist = (mode: DisplayMode) => {
     sessionStorage.setItem("calendarDisplayMode", mode);
@@ -376,11 +554,23 @@ export function CalendarPage() {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
-  useEffect(() => {
+  const fetchEvents = () => {
     fetch(`${BASE_URL}/api/all-calendar-events`)
       .then((r) => r.json())
       .then((data: CalendarEntry[]) => { setEvents(data); setLoading(false); })
       .catch(() => setLoading(false));
+  };
+
+  const fetchLocations = () => {
+    fetch(`${BASE_URL}/api/locations`)
+      .then((r) => r.json())
+      .then((data: Location[]) => setLocations(data))
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchEvents();
+    fetchLocations();
   }, []);
 
   const handleMonthDragEnd = async (dragEvent: DragEndEvent, monthEvents: CalendarEntry[]) => {
@@ -408,9 +598,7 @@ export function CalendarPage() {
         body: JSON.stringify({ items }),
       });
     } catch {
-      fetch(`${BASE_URL}/api/all-calendar-events`)
-        .then((r) => r.json())
-        .then((data: CalendarEntry[]) => setEvents(data));
+      fetchEvents();
     }
   };
 
@@ -457,7 +645,7 @@ export function CalendarPage() {
     }
   }, [loading, displayMode]);
 
-  const priorityCount = events.filter((e) => e.highPriority).length;
+  const priorityCount   = events.filter((e) => e.highPriority).length;
   const isAllCategories = activeCategoryIds === null;
 
   return (
@@ -509,6 +697,26 @@ export function CalendarPage() {
               </button>
             ))}
           </div>
+          <div className="w-px h-6 bg-border" />
+          <button
+            onClick={() => setShowLocMgr(true)}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all",
+              locations.length > 0
+                ? "border-border text-foreground hover:border-primary/40 hover:bg-muted/30"
+                : "border-dashed border-border text-muted-foreground hover:text-foreground hover:border-border",
+            )}
+          >
+            <Settings className="w-3.5 h-3.5" />
+            Locations
+            {locations.length > 0 && (
+              <span className="flex items-center gap-0.5 ml-0.5">
+                {locations.slice(0, 5).map((loc) => (
+                  <span key={loc.id} className="w-2 h-2 rounded-full" style={{ backgroundColor: loc.color }} />
+                ))}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Category filter chips */}
@@ -603,6 +811,18 @@ export function CalendarPage() {
           </div>
         )}
       </div>
+
+      {/* Location manager panel */}
+      {showLocMgr && (
+        <LocationsPanel
+          locations={locations}
+          onClose={() => setShowLocMgr(false)}
+          onRefresh={() => {
+            fetchLocations();
+            fetchEvents();
+          }}
+        />
+      )}
     </AppLayout>
   );
 }

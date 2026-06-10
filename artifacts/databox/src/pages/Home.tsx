@@ -5,7 +5,7 @@ import { CreateCategoryDialog } from "@/components/forms/CreateCategoryDialog";
 import { Link } from "wouter";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Folder, CalendarDays, CalendarClock, GripVertical } from "lucide-react";
+import { Folder, CalendarDays, CalendarClock, GripVertical, MapPin } from "lucide-react";
 import { format, isToday, isTomorrow, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
@@ -22,6 +22,9 @@ interface UpcomingEvent {
   date: string;
   description: string | null;
   sortOrder: number | null;
+  locationId: number | null;
+  locationName: string | null;
+  locationColor: string | null;
   blockId: number;
   blockTitle: string | null;
   instanceId: number;
@@ -61,6 +64,14 @@ function UpcomingEventCard({ event }: { event: UpcomingEvent }) {
             {event.instanceName}
             {event.blockTitle && <span className="opacity-60"> · {event.blockTitle}</span>}
           </p>
+          {event.locationName && (
+            <div className="flex items-center gap-1 mt-0.5">
+              <MapPin className="w-3 h-3 shrink-0" style={{ color: event.locationColor || "#6b7280" }} />
+              <span className="text-xs font-medium truncate" style={{ color: event.locationColor || "#6b7280" }}>
+                {event.locationName}
+              </span>
+            </div>
+          )}
         </div>
         {isEventToday && (
           <span className="text-[10px] uppercase tracking-wider bg-primary/20 text-primary px-1.5 py-0.5 rounded font-bold shrink-0">

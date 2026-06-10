@@ -2,6 +2,7 @@ export * from "./categories";
 export * from "./instances";
 export * from "./blocks";
 export * from "./todo_items";
+export * from "./locations";
 export * from "./calendar_events";
 export * from "./photos";
 export * from "./contact_cards";

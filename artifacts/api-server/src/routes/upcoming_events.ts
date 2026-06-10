@@ -1,7 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { gte, lte, and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { calendarEventsTable, blocksTable, instancesTable, categoriesTable, todoItemsTable } from "@workspace/db";
+import { calendarEventsTable, blocksTable, instancesTable, categoriesTable, todoItemsTable, locationsTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -12,28 +12,32 @@ router.get("/upcoming-events", async (_req: Request, res: Response) => {
     const in7Days = new Date(today);
     in7Days.setDate(today.getDate() + 7);
 
-    const todayStr = today.toISOString().split("T")[0];
+    const todayStr  = today.toISOString().split("T")[0];
     const in7DaysStr = in7Days.toISOString().split("T")[0];
 
     const rows = await db
       .select({
-        id: calendarEventsTable.id,
-        title: calendarEventsTable.title,
-        date: calendarEventsTable.date,
-        description: calendarEventsTable.description,
-        sortOrder: calendarEventsTable.sortOrder,
-        blockId: calendarEventsTable.blockId,
-        blockTitle: blocksTable.title,
-        instanceId: instancesTable.id,
-        instanceName: instancesTable.name,
-        categoryId: categoriesTable.id,
-        categoryName: categoriesTable.name,
+        id:            calendarEventsTable.id,
+        title:         calendarEventsTable.title,
+        date:          calendarEventsTable.date,
+        description:   calendarEventsTable.description,
+        sortOrder:     calendarEventsTable.sortOrder,
+        locationId:    calendarEventsTable.locationId,
+        locationName:  locationsTable.name,
+        locationColor: locationsTable.color,
+        blockId:       calendarEventsTable.blockId,
+        blockTitle:    blocksTable.title,
+        instanceId:    instancesTable.id,
+        instanceName:  instancesTable.name,
+        categoryId:    categoriesTable.id,
+        categoryName:  categoriesTable.name,
         categoryColor: categoriesTable.color,
       })
       .from(calendarEventsTable)
-      .innerJoin(blocksTable, eq(calendarEventsTable.blockId, blocksTable.id))
+      .innerJoin(blocksTable,    eq(calendarEventsTable.blockId, blocksTable.id))
       .innerJoin(instancesTable, eq(blocksTable.instanceId, instancesTable.id))
       .innerJoin(categoriesTable, eq(instancesTable.categoryId, categoriesTable.id))
+      .leftJoin(locationsTable,  eq(calendarEventsTable.locationId, locationsTable.id))
       .where(
         and(
           gte(calendarEventsTable.date, todayStr),
@@ -106,6 +110,9 @@ router.get("/all-calendar-events", async (_req: Request, res: Response) => {
         description:   calendarEventsTable.description,
         highPriority:  calendarEventsTable.highPriority,
         sortOrder:     calendarEventsTable.sortOrder,
+        locationId:    calendarEventsTable.locationId,
+        locationName:  locationsTable.name,
+        locationColor: locationsTable.color,
         blockId:       calendarEventsTable.blockId,
         instanceId:    instancesTable.id,
         instanceName:  instancesTable.name,
@@ -117,6 +124,7 @@ router.get("/all-calendar-events", async (_req: Request, res: Response) => {
       .innerJoin(blocksTable,     eq(calendarEventsTable.blockId, blocksTable.id))
       .innerJoin(instancesTable,  eq(blocksTable.instanceId, instancesTable.id))
       .innerJoin(categoriesTable, eq(instancesTable.categoryId, categoriesTable.id))
+      .leftJoin(locationsTable,   eq(calendarEventsTable.locationId, locationsTable.id))
       .orderBy(asc(calendarEventsTable.date));
     res.json(rows);
   } catch (err) {

@@ -15,6 +15,7 @@ import upcomingEventsRouter from "./upcoming_events";
 import contactCardsRouter from "./contact_cards";
 import listItemsRouter from "./list_items";
 import exportPdfRouter from "./export_pdf";
+import locationsRouter from "./locations";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(upcomingEventsRouter);
 router.use(contactCardsRouter);
 router.use(listItemsRouter);
 router.use(exportPdfRouter);
+router.use(locationsRouter);
 
 export default router;

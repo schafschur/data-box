@@ -9,6 +9,9 @@
 export interface CalendarEvent {
   id: number;
   blockId: number;
+  locationId?: number | null;
+  locationName?: string | null;
+  locationColor?: string | null;
   title: string;
   date: Date;
   /** @nullable */

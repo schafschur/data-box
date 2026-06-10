@@ -122,6 +122,14 @@ function EventRow({
             {event.description}
           </Text>
         ) : null}
+        {(event as { locationName?: string | null }).locationName ? (
+          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2, gap: 4 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: (event as { locationColor?: string | null }).locationColor || "#6b7280" }} />
+            <Text style={{ fontSize: 11, color: (event as { locationColor?: string | null }).locationColor || "#6b7280", fontFamily: "Inter_500Medium" }}>
+              {(event as { locationName?: string | null }).locationName}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.eventActions}>

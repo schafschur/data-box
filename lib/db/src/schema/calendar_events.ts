@@ -2,10 +2,12 @@ import { pgTable, serial, text, integer, boolean, date, timestamp } from "drizzl
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { blocksTable } from "./blocks";
+import { locationsTable } from "./locations";
 
 export const calendarEventsTable = pgTable("calendar_events", {
   id: serial("id").primaryKey(),
   blockId: integer("block_id").notNull().references(() => blocksTable.id, { onDelete: "cascade" }),
+  locationId: integer("location_id").references(() => locationsTable.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   date: date("date").notNull(),
   endDate: date("end_date"),

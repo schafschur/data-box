@@ -388,6 +388,9 @@ export const ListCalendarEventsParams = zod.object({
 export const ListCalendarEventsResponseItem = zod.object({
   "id": zod.number(),
   "blockId": zod.number(),
+  "locationId": zod.number().nullish(),
+  "locationName": zod.string().nullish(),
+  "locationColor": zod.string().nullish(),
   "title": zod.string(),
   "date": zod.coerce.date(),
   "endDate": zod.string().nullish(),
@@ -415,7 +418,8 @@ export const CreateCalendarEventBody = zod.object({
   "endDate": zod.string().nullish(),
   "startTime": zod.string().nullish(),
   "endTime": zod.string().nullish(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "locationId": zod.number().nullish()
 })
 
 
@@ -433,12 +437,16 @@ export const UpdateCalendarEventBody = zod.object({
   "startTime": zod.string().nullish(),
   "endTime": zod.string().nullish(),
   "description": zod.string().nullish(),
-  "highPriority": zod.boolean().optional()
+  "highPriority": zod.boolean().optional(),
+  "locationId": zod.number().nullish()
 })
 
 export const UpdateCalendarEventResponse = zod.object({
   "id": zod.number(),
   "blockId": zod.number(),
+  "locationId": zod.number().nullish(),
+  "locationName": zod.string().nullish(),
+  "locationColor": zod.string().nullish(),
   "title": zod.string(),
   "date": zod.coerce.date(),
   "endDate": zod.string().nullish(),
@@ -703,3 +711,43 @@ export const UploadContactPhotoParams = zod.object({
 export const DeleteContactPhotoParams = zod.object({
   id: zod.coerce.number(),
 });
+
+
+/**
+ * @summary List locations
+ */
+export const ListLocationsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "color": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListLocationsResponse = zod.array(ListLocationsResponseItem)
+
+/**
+ * @summary Create a location
+ */
+export const CreateLocationBody = zod.object({
+  "name": zod.string(),
+  "color": zod.string()
+})
+
+/**
+ * @summary Update a location
+ */
+export const UpdateLocationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateLocationBody = zod.object({
+  "name": zod.string().optional(),
+  "color": zod.string().optional()
+})
+
+/**
+ * @summary Delete a location
+ */
+export const DeleteLocationParams = zod.object({
+  "id": zod.coerce.number()
+})
