@@ -10,3 +10,4 @@
 - [API server cannot import zod directly](api-server-zod-import.md) — esbuild can't resolve bare "zod" in api-server routes; use inline manual validation or import Zod schemas only from @workspace/api-zod.
 - [Mobile PanResponder in ScrollView](mobile-panresponder-scrollview.md) — use onStartShouldSetPanResponder: () => true on the drag handle View to claim gesture before parent ScrollView; use callbacksRef pattern for stale-closure safety.
 - [Mobile block CRUD + keyboard pattern](mobile-block-crud-pattern.md) — Todo/List/CalendarBlock all use inline add/edit forms; [id].tsx wraps ScrollView in KeyboardAvoidingView and passes scrollToEnd as onScrollRequest through BlockRenderer to each block.
+- [UpdateBlockBody content field](update-block-content.md) — content must be a JSON object e.g. { html: "..." }, never a bare string; the Zod schema is zod.object({}).passthrough() so a string fails validation with 400.
