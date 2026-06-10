@@ -108,7 +108,7 @@ function DueSoonSection({ onTodoPress }: { onTodoPress: (instanceId: number) => 
         <View style={styles.sectionHeader}>
           <Feather name="clock" size={13} color={AMBER} />
           <Text style={[styles.sectionLabel, { color: AMBER, fontFamily: "Inter_600SemiBold" }]}>
-            DUE SOON
+            DEADLINES
           </Text>
         </View>
         <View style={[styles.skeleton, { backgroundColor: colors.muted, borderRadius: colors.radius }]} />
@@ -124,12 +124,13 @@ function DueSoonSection({ onTodoPress }: { onTodoPress: (instanceId: number) => 
       <View style={styles.sectionHeader}>
         <Feather name="clock" size={13} color={AMBER} />
         <Text style={[styles.sectionLabel, { color: AMBER, fontFamily: "Inter_600SemiBold" }]}>
-          DUE SOON
+          DEADLINES
         </Text>
       </View>
       <View style={styles.eventList}>
         {todos.map((todo) => {
-          const isToday = todo.deadline === todayStr();
+          const isItemToday = todo.deadline === todayStr();
+          const isOverdue   = !isItemToday && todo.deadline < todayStr();
           const { label, num } = formatDeadlineChip(todo.deadline);
           const dotColor = todo.categoryColor ?? colors.primary;
           return (
@@ -139,8 +140,8 @@ function DueSoonSection({ onTodoPress }: { onTodoPress: (instanceId: number) => 
               style={({ pressed }) => [
                 styles.eventRow,
                 {
-                  backgroundColor: isToday ? "#FEF3C7" : "#FFFBEB",
-                  borderColor: isToday ? "#FCD34D" : "#FDE68A",
+                  backgroundColor: isOverdue ? "#FEF2F2" : isItemToday ? "#FEF3C7" : "#FFFBEB",
+                  borderColor:     isOverdue ? "#FECACA" : isItemToday ? "#FCD34D" : "#FDE68A",
                   borderRadius: colors.radius,
                   opacity: pressed ? 0.8 : 1,
                 },
@@ -150,21 +151,21 @@ function DueSoonSection({ onTodoPress }: { onTodoPress: (instanceId: number) => 
                 style={[
                   styles.dateChip,
                   {
-                    backgroundColor: isToday ? AMBER_CHIP_TODAY : AMBER_LIGHT,
+                    backgroundColor: isOverdue ? "#EF4444" : isItemToday ? AMBER_CHIP_TODAY : AMBER_LIGHT,
                     borderRadius: colors.radius / 1.5,
                   },
                 ]}
               >
-                <Text style={[styles.dateChipDay, { color: isToday ? "#fff" : AMBER, fontFamily: "Inter_600SemiBold" }]}>
+                <Text style={[styles.dateChipDay, { color: (isOverdue || isItemToday) ? "#fff" : AMBER, fontFamily: "Inter_600SemiBold" }]}>
                   {label}
                 </Text>
-                <Text style={[styles.dateChipNum, { color: isToday ? "#fff" : AMBER, fontFamily: "Inter_700Bold" }]}>
+                <Text style={[styles.dateChipNum, { color: (isOverdue || isItemToday) ? "#fff" : AMBER, fontFamily: "Inter_700Bold" }]}>
                   {num}
                 </Text>
               </View>
               <View style={styles.eventContent}>
                 <Text
-                  style={[styles.eventTitle, { color: isToday ? "#92400E" : "#78350F", fontFamily: "Inter_600SemiBold" }]}
+                  style={[styles.eventTitle, { color: isOverdue ? "#991B1B" : isItemToday ? "#92400E" : "#78350F", fontFamily: "Inter_600SemiBold" }]}
                   numberOfLines={1}
                 >
                   {todo.text}

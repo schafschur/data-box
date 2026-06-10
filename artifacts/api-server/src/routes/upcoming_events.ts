@@ -83,7 +83,7 @@ router.get("/urgent-todos", async (_req: Request, res: Response) => {
       .innerJoin(categoriesTable, eq(instancesTable.categoryId, categoriesTable.id))
       .where(
         and(
-          inArray(todoItemsTable.deadline, [todayStr, tomorrowStr]),
+          lte(todoItemsTable.deadline, tomorrowStr),
           eq(todoItemsTable.completed, false)
         )
       )

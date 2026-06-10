@@ -6,7 +6,7 @@ import { Link } from "wouter";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Folder, CalendarDays, CalendarClock, GripVertical, MapPin } from "lucide-react";
-import { format, isToday, isTomorrow, parseISO } from "date-fns";
+import { format, isToday, isTomorrow, isPast, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
@@ -160,7 +160,7 @@ function UrgentTodosSection() {
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <CalendarClock className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Due soon</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Deadlines</h2>
         </div>
         <div className="space-y-2">
           {[1, 2].map((i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}
@@ -176,36 +176,48 @@ function UrgentTodosSection() {
       <div className="flex items-center gap-2">
         <CalendarClock className="h-4 w-4 text-amber-500" />
         <h2 className="text-sm font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-          Due soon
+          Deadlines
         </h2>
       </div>
 
       <div className="space-y-2">
         {todos.map((todo) => {
-          const deadline  = parseISO(todo.deadline);
-          const dueTodayV = isToday(deadline);
+          const deadline    = parseISO(todo.deadline);
+          const dueTodayV   = isToday(deadline);
           const dueTomorrow = isTomorrow(deadline);
+          const isOverdue   = !dueTodayV && isPast(deadline);
 
           return (
             <Link key={todo.id} href={`/instances/${todo.instanceId}`}>
               <div className={cn(
                 "flex items-center gap-4 p-3 rounded-lg border cursor-pointer transition-all hover:shadow-sm group",
-                dueTodayV
+                isOverdue
+                  ? "bg-red-50/70 border-red-200/80 hover:border-red-400/60 dark:bg-red-950/20 dark:border-red-800/50"
+                  : dueTodayV
                   ? "bg-amber-50/70 border-amber-200/80 hover:border-amber-400/60 dark:bg-amber-950/20 dark:border-amber-800/50"
                   : "bg-amber-50/40 border-amber-100/60 hover:border-amber-300/60 dark:bg-amber-950/10 dark:border-amber-900/40"
               )}>
                 <div className={cn(
                   "w-12 h-12 flex flex-col items-center justify-center rounded-lg shrink-0",
-                  dueTodayV ? "bg-amber-500 text-white" : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                  isOverdue
+                    ? "bg-red-500 text-white"
+                    : dueTodayV
+                    ? "bg-amber-500 text-white"
+                    : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
                 )}>
                   <span className="text-[10px] uppercase font-semibold tracking-wide leading-none mb-0.5">
-                    {dueTodayV ? "Today" : dueTomorrow ? "Tmrw" : format(deadline, "EEE")}
+                    {isOverdue ? format(deadline, "EEE") : dueTodayV ? "Today" : dueTomorrow ? "Tmrw" : format(deadline, "EEE")}
                   </span>
                   <span className="text-xl font-serif leading-none">{format(deadline, "d")}</span>
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate text-foreground group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors">
+                  <p className={cn(
+                    "font-medium text-sm truncate transition-colors",
+                    isOverdue
+                      ? "text-red-700 dark:text-red-300 group-hover:text-red-800"
+                      : "text-foreground group-hover:text-amber-700 dark:group-hover:text-amber-300"
+                  )}>
                     {todo.text}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5 truncate">
