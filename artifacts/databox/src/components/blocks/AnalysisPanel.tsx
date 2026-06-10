@@ -108,7 +108,9 @@ function GridBlockAnalytics({ stat }: { stat: GridBlockStat }) {
   const [yMinRaw, setYMinRaw] = useState("");
   const [yMaxRaw, setYMaxRaw] = useState("");
   const [higherIsBetter, setHigherIsBetter] = useState(true);
-  const [selectedRowIds, setSelectedRowIds] = useState<Set<number>>(new Set());
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<number>>(
+    () => new Set(stat.rows.map((r) => r.rowId))
+  );
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
