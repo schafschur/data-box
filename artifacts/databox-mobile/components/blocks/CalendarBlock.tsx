@@ -41,6 +41,18 @@ function formatDate(dateStr: string): string {
   }
 }
 
+function fmt12(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return `${h12}:${m.toString().padStart(2, "0")} ${ampm}`;
+}
+
+function fmtTimeRange(start?: string | null, end?: string | null): string | null {
+  if (!start) return null;
+  return end ? `${fmt12(start)} – ${fmt12(end)}` : fmt12(start);
+}
+
 function EventRow({
   event,
   highlighted,
@@ -106,6 +118,9 @@ function EventRow({
       <View style={styles.eventContent}>
         <Text style={[styles.eventDate, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
           {formatDate(event.date as unknown as string)}
+          {fmtTimeRange(event.startTime, event.endTime)
+            ? `  ·  ${fmtTimeRange(event.startTime, event.endTime)}`
+            : ""}
         </Text>
         <Text
           style={[
