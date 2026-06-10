@@ -46,6 +46,13 @@ function PhotoThumbnail({
         alt={photo.caption || "Photo"}
         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
       />
+      {size === "normal" && photo.caption && (
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent pt-4 pb-1.5 px-2 pointer-events-none">
+          <p className="text-white text-[11px] leading-tight line-clamp-2 text-left">
+            {photo.caption}
+          </p>
+        </div>
+      )}
     </button>
   );
 }
