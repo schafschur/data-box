@@ -100,6 +100,7 @@ function GridBlockAnalytics({ stat }: { stat: GridBlockStat }) {
   const hasMultipleRows = stat.rowCount > 1;
   const [yMinRaw, setYMinRaw] = useState("");
   const [yMaxRaw, setYMaxRaw] = useState("");
+  const [higherIsBetter, setHigherIsBetter] = useState(true);
 
   const yMin = yMinRaw.trim() !== "" && !isNaN(Number(yMinRaw)) ? Number(yMinRaw) : "auto";
   const yMax = yMaxRaw.trim() !== "" && !isNaN(Number(yMaxRaw)) ? Number(yMaxRaw) : "auto";
@@ -137,31 +138,73 @@ function GridBlockAnalytics({ stat }: { stat: GridBlockStat }) {
       <CardContent className="p-4 pt-0 space-y-4">
         {/* Peak callout chips */}
         {(stat.highest || stat.lowest) && (
-          <div className="flex flex-wrap gap-2">
-            {stat.highest && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs">
-                <ArrowUp className="w-3 h-3 text-emerald-500 shrink-0" />
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                  {stat.highest.value}
-                </span>
-                <span className="text-muted-foreground">
-                  {GRID_DAY_LABELS[stat.highest.day]}
-                  {stat.highest.rowLabel ? ` · ${stat.highest.rowLabel}` : ""}
-                </span>
-              </div>
-            )}
-            {stat.lowest && stat.lowest.value !== stat.highest?.value && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs">
-                <ArrowDown className="w-3 h-3 text-rose-500 shrink-0" />
-                <span className="font-semibold text-rose-600 dark:text-rose-400">
-                  {stat.lowest.value}
-                </span>
-                <span className="text-muted-foreground">
-                  {GRID_DAY_LABELS[stat.lowest.day]}
-                  {stat.lowest.rowLabel ? ` · ${stat.lowest.rowLabel}` : ""}
-                </span>
-              </div>
-            )}
+          <div className="flex flex-wrap items-center gap-2">
+            {stat.highest && (() => {
+              const good = higherIsBetter;
+              return (
+                <div className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs",
+                  good
+                    ? "bg-emerald-500/10 border-emerald-500/20"
+                    : "bg-rose-500/10 border-rose-500/20"
+                )}>
+                  <ArrowUp className={cn("w-3 h-3 shrink-0", good ? "text-emerald-500" : "text-rose-500")} />
+                  <span className={cn("font-semibold", good ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
+                    {stat.highest.value}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {GRID_DAY_LABELS[stat.highest.day]}
+                    {stat.highest.rowLabel ? ` · ${stat.highest.rowLabel}` : ""}
+                  </span>
+                </div>
+              );
+            })()}
+            {stat.lowest && stat.lowest.value !== stat.highest?.value && (() => {
+              const good = !higherIsBetter;
+              return (
+                <div className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs",
+                  good
+                    ? "bg-emerald-500/10 border-emerald-500/20"
+                    : "bg-rose-500/10 border-rose-500/20"
+                )}>
+                  <ArrowDown className={cn("w-3 h-3 shrink-0", good ? "text-emerald-500" : "text-rose-500")} />
+                  <span className={cn("font-semibold", good ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
+                    {stat.lowest.value}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {GRID_DAY_LABELS[stat.lowest.day]}
+                    {stat.lowest.rowLabel ? ` · ${stat.lowest.rowLabel}` : ""}
+                  </span>
+                </div>
+              );
+            })()}
+            {/* Higher/lower is better toggle */}
+            <div className="ml-auto flex items-center rounded-lg border border-border overflow-hidden text-xs">
+              <button
+                onClick={() => setHigherIsBetter(true)}
+                className={cn(
+                  "px-2.5 py-1 flex items-center gap-1 transition-colors",
+                  higherIsBetter
+                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-medium"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <ArrowUp className="w-3 h-3" /> good
+              </button>
+              <div className="w-px h-4 bg-border" />
+              <button
+                onClick={() => setHigherIsBetter(false)}
+                className={cn(
+                  "px-2.5 py-1 flex items-center gap-1 transition-colors",
+                  !higherIsBetter
+                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-medium"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <ArrowDown className="w-3 h-3" /> good
+              </button>
+            </div>
           </div>
         )}
 
