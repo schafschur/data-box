@@ -56,6 +56,9 @@ interface UpcomingEvent {
   categoryId: number;
   categoryName: string;
   categoryColor: string | null;
+  locationId: number | null;
+  locationName: string | null;
+  locationColor: string | null;
 }
 
 const AMBER = "#D97706";
@@ -274,6 +277,17 @@ function UpcomingEventRow({
           {event.instanceName}
           {event.blockTitle ? ` · ${event.blockTitle}` : ""}
         </Text>
+        {event.locationName ? (
+          <View style={styles.locationBadge}>
+            <View style={[styles.locationDot, { backgroundColor: event.locationColor ?? colors.primary }]} />
+            <Text
+              style={[styles.locationText, { color: event.locationColor ?? colors.primary, fontFamily: "Inter_500Medium" }]}
+              numberOfLines={1}
+            >
+              {event.locationName}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       {/* Today badge + color dot */}
@@ -748,4 +762,7 @@ const styles = StyleSheet.create({
   todayBadgeText: { fontSize: 9, letterSpacing: 0.5 },
   colorDot: { width: 8, height: 8, borderRadius: 4, opacity: 0.5 },
   skeleton: { height: 56, marginBottom: 8 },
+  locationBadge: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
+  locationDot: { width: 6, height: 6, borderRadius: 3 },
+  locationText: { fontSize: 11 },
 });
